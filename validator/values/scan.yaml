@@ -1,0 +1,41 @@
+# Copyright (c) 2026 bentzn
+# SPDX-License-Identifier: Apache-2.0
+# Author Claude/bentzn
+# Generated 2026-09-07T00:00:00Z
+#
+# The scan app. networkName is overridden by install.sh from basenet.conf.
+
+isFirstSv: true
+participantAddress: participant
+sequencerAddress: global-domain-0-sequencer
+mediatorAddress: global-domain-0-mediator
+
+# Static tokens rather than the client_credentials grant. This is what makes a
+# private deployment tractable: no token endpoint has to exist.
+cluster:
+  fixedTokens: true
+
+persistence:
+  databaseName: cantonnet_scan
+  schema: scan
+  host: apps-pg
+  port: 5432
+  user: cnadmin
+  secretName: postgres-secrets
+
+resources:
+  requests:
+    cpu: "1"
+    memory: 2Gi
+  limits:
+    memory: 6Gi
+
+spliceInstanceNames:
+  networkName: "BaseNet"
+  networkFaviconUrl: "https://www.hyperledger.org/hubfs/hyperledgerfavicon.png"
+  amuletName: "Amulet"
+  amuletNameAcronym: "AMT"
+  nameServiceName: "Amulet Name Service"
+  nameServiceNameAcronym: "ANS"
+
+enableReloader: false

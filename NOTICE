@@ -1,0 +1,13 @@
+Raposza BaseNet
+Copyright 2026 bentzn
+
+This product includes software developed by bentzn.
+
+Licensed under the Apache License, Version 2.0.
+You may obtain a copy of the License at
+https://www.apache.org/licenses/LICENSE-2.0.txt
+
+This distribution contains no Digital Asset artifact and no Splice
+chart. The Helm charts are pulled from the vendor's registry at
+install time, under the vendor's own licence, and are never
+redistributed here.

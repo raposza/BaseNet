@@ -1,0 +1,36 @@
+# Copyright (c) 2026 bentzn
+# SPDX-License-Identifier: Apache-2.0
+# Author Claude/bentzn
+# Generated 2026-09-11T09:46:00Z
+#
+# A MemberOrg's own Canton participant. Its identity is initialised by the
+# MemberOrg's validator, which finds it at participantAddress.
+#
+# AUTHENTICATED THE PRODUCTION WAY: the ledger API verifies RS256 tokens
+# against the identity provider's JWKS and requires the audience in
+# STR_MO_LEDGER_AUDIENCE - memberorg-install.sh sets auth.jwksUrl and
+# auth.targetAudience. Its administrator is the ledger user the validator
+# authenticates as, read from the validator's secret; stated here rather than
+# left to the chart's default so the pairing is visible.
+
+disableAuth: false
+participantAdminUserNameFrom:
+  secretKeyRef:
+    name: splice-app-validator-ledger-api-auth
+    key: ledger-api-user
+    optional: false
+enableReloader: false
+
+resources:
+  requests:
+    cpu: "1"
+    memory: 6Gi
+  limits:
+    memory: 16Gi
+
+persistence:
+  host: postgres
+  port: 5432
+  databaseName: cantonnet_participant
+  schema: participant
+  secretName: postgres-secrets

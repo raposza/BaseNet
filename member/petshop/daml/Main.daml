@@ -1,0 +1,587 @@
+-- Copyright (c) 2026 bentzn
+-- SPDX-License-Identifier: Apache-2.0
+--
+-- The pet shop: four templates, four parties, and an end state that is
+-- asserted rather than eyeballed.
+--
+-- WHAT IT IS FOR. Nothing in this workspace has ever put a ledger into a known
+-- non-trivial state, so the Sandbox window's Participant/Data pane reports
+-- zeros on every fresh start - and a pane that renders contracts wrongly
+-- cannot be told from one that renders an empty ledger correctly. This ends in
+-- a state anyone can check by reading the pane against the table in README.md.
+--
+-- WHY A PET SHOP. The reader should not have to learn a domain to see whether
+-- the pane is right. A shop sells animals, two customers buy, one request is
+-- turned down, and a vet sees one of the animals afterwards. Every contract on
+-- the ledger at the end is a sentence someone can say out loud.
+--
+-- THE PORTABILITY SUBSET, and it is deliberate. Everything here is in the
+-- intersection this workspace has already compiled on both generations, in
+-- `probes/types/typestest-2.9.6` and `probes/types/acstest-3.4.10`: templates,
+-- signatory / observer / ensure, `choice` blocks with an explicit controller,
+-- nonconsuming choices, records with deriving, and the Daml.Script calls
+-- `allocateParty`, `submit`, `submitMustFail`, `createCmd`, `exerciseCmd` and
+-- `query`.
+--
+-- NOT USED, each for a reason:
+--   * contract keys and `exerciseByKey` - not needed by the scenario, and they
+--     bring key-consistency semantics this fixture is not meant to test. An
+--     earlier draft of the document claimed 3.x had dropped them; it has not,
+--     and that claim was asserted from memory rather than measured;
+--   * interfaces - `q3-fixture.sh` had to add `-Wno-upgrade-interfaces` to get
+--     one past a 3.x compiler, and a fixture that needs a flag per generation
+--     is not a portable fixture;
+--   * `getTime` and anything time-dependent - the outcome has to be the same
+--     under `--static-time` and without it;
+--   * `length` and `sum` - see the note on `countOf` below.
+--
+-- Author Claude/bentzn
+-- Generated 2026-08-17T22:15:00Z
+
+module Main where
+
+import Daml.Script
+
+-- | An animal. The SHOP signs it and the owner merely watches, which is what
+-- lets ownership change without the new owner having signed anything
+-- beforehand - and is the relationship a naive browser gets wrong.
+--
+-- `Transfer` creates a REPLACEMENT contract with the shop still on it as
+-- signatory, which is why the shop remains a stakeholder of the animal it
+-- sold. That is a property of the new contract, not a memory of the old one.
+--
+-- An unsold animal is owned by the shop, so `owner` is never empty and there
+-- is no second template for stock.
+template Pet
+  with
+    shop : Party
+    owner : Party
+    name : Text
+    species : Text
+  where
+    signatory shop
+    observer owner
+
+    -- Consuming: the animal has ONE owner, so the old contract goes when the
+    -- new one arrives.
+    choice Transfer : ContractId Pet
+      with
+        newOwner : Party
+      controller owner
+      do
+        create this with owner = newOwner
+
+    -- Nonconsuming: a check-up does not change who owns the animal, so the
+    -- Pet contract survives it. This is the only choice here that leaves its
+    -- own contract in place.
+    nonconsuming choice BookCheckup : ContractId Checkup
+      with
+        vet : Party
+        notes : Text
+      controller owner
+      do
+        create Checkup with
+          vet
+          owner
+          petName = name
+          notes
+
+-- | A customer asking to buy. The CUSTOMER signs it, so the shop cannot
+-- invent a request, and the shop watches it so it can answer.
+template AdoptionRequest
+  with
+    shop : Party
+    buyer : Party
+    petName : Text
+    price : Decimal
+    note : Text
+  where
+    signatory buyer
+    observer shop
+
+    ensure price > 0.0
+
+    -- The choice that reaches ACROSS templates: one transaction checks the
+    -- animal, moves it, and writes the receipt.
+    choice Approve : AdoptionResult
+      with
+        petCid : ContractId Pet
+      controller shop
+      do
+        pet <- fetch petCid
+        assertMsg "the shop must still own the animal" (pet.owner == shop)
+        assertMsg "the request must name that animal" (pet.name == petName)
+
+        cidPet <- exercise petCid Transfer with newOwner = buyer
+        cidReceipt <- create Receipt with
+          shop
+          buyer
+          petName
+          price
+        pure AdoptionResult with
+          petCid = cidPet
+          receiptCid = cidReceipt
+
+    -- The other branch: the shop cannot sell today and says WHEN it can. The
+    -- request is archived and an identical one takes its place carrying the
+    -- shop's note, so the customer keeps their place and the answer is on the
+    -- ledger rather than in an email.
+    --
+    -- The buyer signs `AdoptionRequest` and is a signatory of THIS one, so the
+    -- buyer's authority is present in this transaction and the shop can create
+    -- the replacement without asking again. That is the whole trick, and it is
+    -- the same delegation `Pet.Transfer` relies on one template up.
+    choice SuggestLater : ContractId AdoptionRequest
+      with
+        suggestion : Text
+      controller shop
+      do
+        create this with note = suggestion
+
+-- | What an approval produced. A record rather than a tuple, so the script
+-- reads by name and a later field cannot be added positionally.
+data AdoptionResult = AdoptionResult
+  with
+    petCid : ContractId Pet
+    receiptCid : ContractId Receipt
+  deriving (Eq, Show)
+
+-- | Proof of purchase, signed by both sides.
+--
+-- No explicit choice: apart from Daml's implicit `Archive`, whose controllers
+-- are the signatories, it is deliberately inert. Because BOTH sign it, neither
+-- side can archive it without the other - which is the property wanted from a
+-- record of a completed sale.
+template Receipt
+  with
+    shop : Party
+    buyer : Party
+    petName : Text
+    price : Decimal
+  where
+    signatory shop, buyer
+
+-- | A visit to the vet. Signed by the OWNER, who booked it, and seen by the
+-- vet. The shop is not party to it at all - the animal has left the shop.
+template Checkup
+  with
+    vet : Party
+    owner : Party
+    petName : Text
+    notes : Text
+  where
+    signatory owner
+    observer vet
+
+-- | Counted by recursion, and the total summed the same way.
+--
+-- NOT `length` and NOT `sum`. `acstest`'s own comment records the rule this
+-- follows - "recursion rather than mapA_/forA_ so nothing here depends on
+-- which Foldable helpers a given SDK's Prelude re-exports" - and a fixture
+-- whose whole value is compiling unchanged from 2.8 to 3.5 is the last place
+-- to spend that risk to save four lines.
+countOf : [a] -> Int
+countOf [] = 0
+countOf (_ :: rest) = 1 + countOf rest
+
+-- | What the shop took, over a query result.
+totalOf : [(ContractId Receipt, Receipt)] -> Decimal
+totalOf [] = 0.0
+totalOf ((_, receipt) :: rest) = receipt.price + totalOf rest
+
+-- | The whole story, with its end state asserted.
+--
+-- ASSUMES A FRESH LEDGER. The counts are of everything each party can see, so
+-- a second run against the same ledger doubles them and the assertions fail -
+-- which is the correct behaviour for a fixture whose value is that the outcome
+-- is known.
+--
+-- The story:
+--
+--   1. the shop stocks three animals - Rex the dog, Milo the cat, Kiwi the
+--      parrot - and owns all three;
+--   2. Alice asks for Rex at 250.00 and the shop approves: Rex becomes hers
+--      and a receipt is written;
+--   3. Bob asks for Milo at 120.00 and the shop approves;
+--   4. Bob asks for Kiwi at 75.00. The shop cannot rehome Kiwi until a
+--      companion bird arrives, so it answers with a DATE rather than a
+--      refusal: the request is replaced by an identical one carrying the
+--      shop's note, and Bob keeps his place;
+--   5. Alice books Rex a check-up with the vet, which does NOT change who owns
+--      Rex;
+--   6. Bob cannot approve his own outstanding request - he is not the shop;
+--   7. Alice cannot book a check-up for Bob's cat - she does not own it.
+-- | The four parties the fixture runs as.
+--
+-- A RECORD rather than the list `ShopWitnesses` carries, and that is forced:
+-- `setupLedger` submits ROLE BY ROLE - the shop signs, Alice and Bob ask, the
+-- vet observes - so a positional list would make the input order load-bearing
+-- with nothing to check it. The record is also the encoding this workspace has
+-- actually run through `--input-file`; the list is the one it has not - D-405.
+data ShopParties = ShopParties
+  with
+    shop : Party
+    alice : Party
+    bob : Party
+    vet : Party
+  deriving (Eq, Show)
+
+
+-- | Allocate the parties and create the users. ADMIN RIGHTS ONLY.
+--
+-- WHY THIS IS SEPARATE FROM `setupLedger`. A token carries `actAs` for party
+-- ids that existed when it was minted, and `allocateParty` produces ids that
+-- did not. On an authenticated participant the two therefore cannot run under
+-- one credential: MEASURED 2026-08-25 on 2.9.6, a `participant_admin` token
+-- allocated all four parties and was then refused the first submission with
+-- `Claims do not authorize to act as party 'party-<uuid>::...'`.
+--
+-- Canton 3.x hides that behind `act-as-any-party-claim`, which makes one admin
+-- token act for anybody. This split removes the need for it on BOTH lines: the
+-- ids are returned here, a token is minted for exactly those four, and
+-- `setupLedger` runs under it holding no rights the fixture's own users do not.
+--
+-- Run it with `--output-file`, which is where the caller reads the ids from.
+setupParties : Script ShopParties
+setupParties = script do
+  shop <- allocateParty "PetShop"
+  alice <- allocateParty "Alice"
+  bob <- allocateParty "Bob"
+  vet <- allocateParty "Vet"
+
+  -- THE USERS, and they are the point of this fixture reaching a browser.
+  --
+  -- A GUI start provisions `participant_admin` and nothing else, and admin
+  -- rights do NOT reach contracts: with the stack configured AUDIENCE, party
+  -- rights come from the `sub` user's rights on the participant, so there was
+  -- no value of `sub` that could read anything and `GetActiveContracts` was
+  -- refused. Four actor users and one reader is the cheapest thing that makes
+  -- the ACS readable at all.
+  --
+  -- The reader is SEPARATE from the four rather than one of them holding every
+  -- right, because a browser reading as `observer` sees the union while
+  -- reading as `alice` sees what Alice is entitled to - and the difference
+  -- between those two is exactly what a ledger browser is for.
+  -- `UserId` HAS NO EXPORTED CONSTRUCTOR - measured 2026-08-24, dpm build on
+  -- 3.5.12: `Data constructor not in scope: UserId : Text -> UserId`, and
+  -- nothing else in this block was refused. `validateUserId` is the way in,
+  -- and it is a Script action rather than a pure function because it can
+  -- reject the text.
+  uidShop <- validateUserId "petshop"
+  uidAlice <- validateUserId "alice"
+  uidBob <- validateUserId "bob"
+  uidVet <- validateUserId "vet"
+  uidObserver <- validateUserId "observer"
+  uidSuper <- validateUserId "superuser"
+
+  createUser (User uidShop (Some shop)) [CanActAs shop]
+  createUser (User uidAlice (Some alice)) [CanActAs alice]
+  createUser (User uidBob (Some bob)) [CanActAs bob]
+  createUser (User uidVet (Some vet)) [CanActAs vet]
+  createUser (User uidObserver None)
+    [CanReadAs shop, CanReadAs alice, CanReadAs bob, CanReadAs vet]
+
+  -- THE SUPERUSER, for ease of use rather than for realism.
+  --
+  -- It holds BOTH rights on all four parties, so a session working as it sees
+  -- the whole ledger and can submit for anybody. That is exactly what the
+  -- other five are not: the point of `alice` is that she cannot see Bob's
+  -- receipt, and a browser is only shown to be working when the two disagree.
+  -- This one exists so that a person looking at the fixture for the first time
+  -- does not have to choose a user before anything appears.
+  --
+  -- PARTICIPANT ADMIN IS NOT AMONG THESE RIGHTS and is not an oversight.
+  -- Admin rights do not reach contracts - it is what refused every read in
+  -- this session - so adding it would widen nothing that matters here.
+  createUser (User uidSuper None)
+    [ CanActAs shop, CanActAs alice, CanActAs bob, CanActAs vet
+    , CanReadAs shop, CanReadAs alice, CanReadAs bob, CanReadAs vet ]
+
+  debug ("petshop parties allocated - " <> show [shop, alice, bob, vet]
+         <> ", users [petshop, alice, bob, vet, observer, superuser]")
+  pure (ShopParties with shop, alice, bob, vet)
+
+
+-- | Build the ledger as the four parties. NEEDS `actAs` FOR ALL FOUR.
+--
+-- Every statement here submits, so this is the half that needs party rights
+-- and none of the admin ones. Run it with `--input-file` carrying what
+-- `setupParties` wrote.
+--
+-- @param parties what `setupParties` allocated
+setupLedger : ShopParties -> Script ()
+setupLedger parties = script do
+  let shop = parties.shop
+  let alice = parties.alice
+  let bob = parties.bob
+  let vet = parties.vet
+
+  -- 1. the stock
+  cidRex <- submit shop do
+    createCmd Pet with
+      shop
+      owner = shop
+      name = "Rex"
+      species = "Dog"
+
+  cidMilo <- submit shop do
+    createCmd Pet with
+      shop
+      owner = shop
+      name = "Milo"
+      species = "Cat"
+
+  cidKiwi <- submit shop do
+    createCmd Pet with
+      shop
+      owner = shop
+      name = "Kiwi"
+      species = "Parrot"
+
+  -- 2. Alice buys Rex
+  cidAskRex <- submit alice do
+    createCmd AdoptionRequest with
+      shop
+      buyer = alice
+      petName = "Rex"
+      price = 250.00
+      note = ""
+
+  resultRex <- submit shop do
+    exerciseCmd cidAskRex Approve with petCid = cidRex
+
+  -- 3. Bob buys Milo
+  cidAskMilo <- submit bob do
+    createCmd AdoptionRequest with
+      shop
+      buyer = bob
+      petName = "Milo"
+      price = 120.00
+      note = ""
+
+  resultMilo <- submit shop do
+    exerciseCmd cidAskMilo Approve with petCid = cidMilo
+
+  -- 4. Bob asks for Kiwi. Kiwi needs a companion bird, so the shop answers
+  -- with a date rather than a no.
+  cidAskKiwi <- submit bob do
+    createCmd AdoptionRequest with
+      shop
+      buyer = bob
+      petName = "Kiwi"
+      price = 75.00
+      note = ""
+
+  cidAskKiwiLater <- submit shop do
+    exerciseCmd cidAskKiwi SuggestLater with
+      suggestion = "Kiwi is rehomed in pairs - ask again once Coco arrives"
+
+  -- 5. the vet sees Rex. Nonconsuming, so Alice still owns him afterwards.
+  _ <- submit alice do
+    exerciseCmd resultRex.petCid BookCheckup with
+      vet
+      notes = "Annual vaccination"
+
+  -- 6. only the shop approves its own sales. Bob's Kiwi request is still
+  -- open - that is what step 4 left behind - and he cannot answer it himself.
+  submitMustFail bob do
+    exerciseCmd cidAskKiwiLater Approve with petCid = cidKiwi
+
+  -- 7. and only an owner books a check-up. Milo is BOB's cat, and Alice is
+  -- not even an observer of him, so she cannot reach the contract at all.
+  submitMustFail alice do
+    exerciseCmd resultMilo.petCid BookCheckup with
+      vet
+      notes = "not Alice's cat to book"
+
+  -- ------------------------------------------------------------- the outcome
+  lstPetShop <- query @Pet shop
+  lstPetAlice <- query @Pet alice
+  lstPetBob <- query @Pet bob
+  lstRequest <- query @AdoptionRequest shop
+  lstReceipt <- query @Receipt shop
+  lstCheckupVet <- query @Checkup vet
+  lstCheckupShop <- query @Checkup shop
+
+  -- The shop signed every animal, so it still sees all three - including the
+  -- two it no longer owns. That is the point of the template, and a browser
+  -- that shows the shop two animals is wrong.
+  assertMsg "the shop sees all three animals" (countOf lstPetShop == 3)
+  assertMsg "Alice has one animal" (countOf lstPetAlice == 1)
+  assertMsg "Bob has one animal" (countOf lstPetBob == 1)
+  assertMsg "one request is left, waiting on Coco" (countOf lstRequest == 1)
+  assertMsg "two animals were sold" (countOf lstReceipt == 2)
+  assertMsg "the vet has one check-up" (countOf lstCheckupVet == 1)
+  assertMsg "the shop took 370.00" (totalOf lstReceipt == 370.00)
+
+  -- MEASURED 2026-08-18, and now ASSERTED. The shop is neither signatory nor
+  -- observer of a Checkup, so the stakeholder rule says it should see none -
+  -- but the Checkup is created as a CONSEQUENCE of a choice exercised on a Pet
+  -- the shop signs, and Daml has disclosure and divulgence semantics alongside
+  -- stakeholder visibility. Whether a divulged contract reaches the shop's
+  -- active contract set, and whether it does so identically on both
+  -- generations, had been measured nowhere, so this was printed and not
+  -- asserted: a fixture failing on an unmeasured number fails for a reason
+  -- that has nothing to do with the browser it exists to check.
+  --
+  -- It is measured now. ZERO on all twelve installed versions, 2.8.12 through
+  -- 3.5.11 - natively on the nine with a compiler, cross-version on the three
+  -- without. The stakeholder rule describes the ACS on both generations, so
+  -- the row is asserted like the rest.
+  --
+  -- The count is STILL PRINTED, and printed BEFORE the assertion fires. A
+  -- version that disagrees is exactly the one whose number somebody will want,
+  -- and an assertion aborting first would take it away.
+  debug ("MEASURED - Checkups in the shop's ACS: " <> show (countOf lstCheckupShop)
+         <> " (0 by the stakeholder rule)")
+  assertMsg "the shop sees no check-ups" (countOf lstCheckupShop == 0)
+
+  debug ("petshop fixture OK - " <> show (countOf lstReceipt)
+         <> " sold for " <> show (totalOf lstReceipt)
+         <> ", parties " <> show [shop, alice, bob, vet])
+  pure ()
+
+
+-- | Both halves, in one run. THE AUTH-OFF PATH, unchanged in what it does.
+--
+-- One credential does everything here, which is correct exactly when the
+-- participant checks nothing - `FixtureSweep` forces that and this is what it
+-- runs. On an authenticated participant use the two halves instead.
+setup : Script ()
+setup = script do
+  parties <- setupParties
+  setupLedger parties
+
+
+-- ---------------------------------------------------------------- the API read
+
+-- | The parties a `verify` run reads the ledger AS.
+--
+-- A LIST rather than four named fields, and that is FORCED rather than
+-- preferred. `allocateParty` sets a DISPLAY NAME and the id hint is generated,
+-- so no party id on this ledger carries `PetShop` and nothing outside the
+-- script can map an id back to its role - D-405. What `verify` asserts is
+-- therefore role-free: the UNION of what every supplied party can see,
+-- deduplicated by contract id.
+--
+-- Passed with `--input-file`, which this workspace has run:
+-- `probes/auth/fixture.sh` drives `Main:setupWith` that way against a 2.x
+-- participant. The list is the one element of the encoding that has NOT been
+-- run here; a record of Party has.
+data ShopWitnesses = ShopWitnesses
+  with
+    parties : [Party]
+  deriving (Eq, Show)
+
+-- | Membership, by recursion.
+--
+-- NOT `elem`, for the reason `countOf` is not `length`: it is a Foldable
+-- method, and a fixture whose whole value is compiling unchanged from 2.8 to
+-- 3.5 is the last place to depend on which helpers a Prelude re-exports.
+hasOne : Eq a => a -> [a] -> Bool
+hasOne _ [] = False
+hasOne x (y :: rest) = if x == y then True else hasOne x rest
+
+-- | The distinct members, accumulated. Order is not preserved and is not
+-- asserted on - only the count is.
+distinctInto : Eq a => [a] -> [a] -> [a]
+distinctInto acc [] = acc
+distinctInto acc (x :: rest) =
+  if hasOne x acc then distinctInto acc rest else distinctInto (x :: acc) rest
+
+distinctOf : Eq a => [a] -> [a]
+distinctOf lst = distinctInto [] lst
+
+-- | The contract ids out of a query result. No constraint, so it serves all
+-- four templates.
+cidsOf : [(ContractId t, t)] -> [ContractId t]
+cidsOf [] = []
+cidsOf ((cid, _) :: rest) = cid :: cidsOf rest
+
+joinOf : [a] -> [a] -> [a]
+joinOf [] lstTail = lstTail
+joinOf (x :: rest) lstTail = x :: joinOf rest lstTail
+
+-- Four walkers rather than one polymorphic one. A `Template t =>` helper would
+-- be four lines shorter and would introduce a constraint synonym this fixture
+-- has never compiled on either generation, which is the trade the module
+-- header refuses everywhere else.
+
+cidsPet : [Party] -> Script [ContractId Pet]
+cidsPet [] = pure []
+cidsPet (party :: rest) = do
+  lstHere <- query @Pet party
+  lstRest <- cidsPet rest
+  pure (joinOf (cidsOf lstHere) lstRest)
+
+cidsRequest : [Party] -> Script [ContractId AdoptionRequest]
+cidsRequest [] = pure []
+cidsRequest (party :: rest) = do
+  lstHere <- query @AdoptionRequest party
+  lstRest <- cidsRequest rest
+  pure (joinOf (cidsOf lstHere) lstRest)
+
+cidsReceipt : [Party] -> Script [ContractId Receipt]
+cidsReceipt [] = pure []
+cidsReceipt (party :: rest) = do
+  lstHere <- query @Receipt party
+  lstRest <- cidsReceipt rest
+  pure (joinOf (cidsOf lstHere) lstRest)
+
+cidsCheckup : [Party] -> Script [ContractId Checkup]
+cidsCheckup [] = pure []
+cidsCheckup (party :: rest) = do
+  lstHere <- query @Checkup party
+  lstRest <- cidsCheckup rest
+  pure (joinOf (cidsOf lstHere) lstRest)
+
+-- | The end state, read back over the LEDGER API and asserted.
+--
+-- READ ONLY. No allocation, no submission, nothing created or archived, so it
+-- can be run twice against one ledger and before and after a snapshot. That is
+-- what makes it usable as `setup`'s control: a `verify` that passed before the
+-- snapshot and fails after it has measured the RESTORE, and one that fails
+-- both times has measured the script.
+--
+-- WHAT IT ADDS OVER READING THE DATABASE. `FixtureSweep` counts rows in the
+-- participant's own create-event table, which proves the rows survived the
+-- restore. It does not prove the participant will SERVE them: the schema and
+-- the API are two different questions, and D-178 is the entry about a green
+-- assertion that never reached the thing it named.
+--
+-- The counts are the active-contract half of `setup`'s own end state, taken
+-- over the union of every supplied party:
+--
+--   * three animals - the shop signs all three and still sees the two it sold;
+--   * one adoption request, the one waiting on Coco;
+--   * two receipts;
+--   * one check-up.
+--
+-- They are PRINTED before any of them is asserted, for the reason the
+-- divulgence row is printed: the version that disagrees is the one whose
+-- numbers somebody will want, and an assertion aborting first takes them away.
+verify : ShopWitnesses -> Script ()
+verify witness = do
+  lstPet <- cidsPet witness.parties
+  lstRequest <- cidsRequest witness.parties
+  lstReceipt <- cidsReceipt witness.parties
+  lstCheckup <- cidsCheckup witness.parties
+
+  let cntParty = countOf witness.parties
+  let cntPet = countOf (distinctOf lstPet)
+  let cntRequest = countOf (distinctOf lstRequest)
+  let cntReceipt = countOf (distinctOf lstReceipt)
+  let cntCheckup = countOf (distinctOf lstCheckup)
+
+  debug ("MEASURED - over " <> show cntParty <> " parties: pets "
+         <> show cntPet <> ", requests " <> show cntRequest
+         <> ", receipts " <> show cntReceipt
+         <> ", checkups " <> show cntCheckup)
+
+  assertMsg "the ledger serves three animals" (cntPet == 3)
+  assertMsg "the ledger serves one open request" (cntRequest == 1)
+  assertMsg "the ledger serves two receipts" (cntReceipt == 2)
+  assertMsg "the ledger serves one check-up" (cntCheckup == 1)
+
+  debug "petshop verify OK - the Ledger API served the fixture"
+  pure ()

@@ -1,0 +1,116 @@
+# Copyright (c) 2026 bentzn
+# SPDX-License-Identifier: Apache-2.0
+#
+# A SEED FOR basenet.conf.local - copy it, do not read it and retype it.
+#
+#     cp basenet.conf.local.example basenet.conf.local
+#
+# basenet.conf holds the defaults and is not yours to edit. Anything you set
+# here is sourced after it and wins. `.gitignore` names basenet.conf.local, and
+# the publication tooling excludes it, so your real values cannot be committed
+# or exported by accident. This .example file has no real values in it and is
+# published on purpose.
+#
+# EVERY ADDRESS BELOW IS FROM 192.0.2.0/24, which RFC 5737 reserves for
+# documentation. None of them can be anybody's machine, so nothing here works
+# until you replace them - which is the point: a plausible-looking address that
+# half works is worse than one that obviously does not.
+#
+# You need three things right before anything installs. The rest have working
+# defaults.
+
+# ---- 1. WHERE THE CLUSTER REACHES YOUR IDENTITY PROVIDER --------------------
+#
+# THE ONE SETTING PEOPLE GET WRONG. This is the address a POD uses, not the
+# address you use. Inside a pod, localhost is that pod, so 127.0.0.1 and
+# localhost are both wrong here even when the provider runs on your own
+# machine. Use the address your workstation has on the network the cluster can
+# see - `ip -4 addr` will show it - and the port the provider listens on.
+#
+# The bundled provider pins its issuer to whatever you put here, and that one
+# string has to be reachable identically from the cluster and from your
+# browser, because the discovery document, every endpoint URL and the `iss` of
+# every token are compared literally.
+STR_OIDC_BASE_URL=http://192.0.2.10:32002
+
+# ---- 2. THE STORAGE CLASS ---------------------------------------------------
+#
+# Every database asks for a PersistentVolumeClaim. `kubectl get storageclass`
+# names what your cluster has. k3s ships local-path; kubeadm ships nothing at
+# all until you install a provisioner, and a stack that hangs with every
+# PostgreSQL pod Pending is this setting.
+STR_STORAGE_CLASS=local-path
+
+# ---- 3. WHO CAN SIGN IN -----------------------------------------------------
+#
+# name:password pairs for the bundled provider's login page, comma separated,
+# plain text. One per person who will open a wallet. The name becomes the `sub`
+# of every token that person gets, so it has to match STR_MO_WALLET_USER for
+# the MemberOrg whose wallet they open - the default pattern is <name>-user.
+#
+# A replacement provider keeps its own users and ignores this line.
+STR_JWTMINT_USERS=sv-user:change-me,memberorg-a-user:change-me
+
+# ---- The rest have defaults that work ---------------------------------------
+
+# The Splice release. Bump it, then run ./shared/render.sh BEFORE installing
+# anything: the required set of values changes between releases, and what it
+# rejects is the change list.
+#STR_SPLICE_VERSION=0.7.4
+
+# The audience the network-side apps require on an inbound token. Any string,
+# as long as your provider mints it and both sides agree.
+#STR_OIDC_AUDIENCE=https://sv.example.com
+
+# The audience a MemberOrg's participant requires. Same rule, different side.
+#STR_MO_LEDGER_AUDIENCE=https://ledger_api.example.com
+
+# ---- Pointing at your own registry ------------------------------------------
+#
+# Blank pulls from the vendor. Set this and every image reference is rewritten
+# to your mirror. ./shared/images.sh prints the list to mirror, and
+# ./shared/download_images.sh pulls them by digest and writes SHA256SUMS.
+#
+# THE LAYOUT MATTERS - read docs/images.md before setting it. The charts append
+# their own image names to this value, so your registry has to carry them at
+# <STR_IMAGE_REPO>/<the vendor's image name>:<tag>. A registry that holds them
+# somewhere else needs the per-image overrides that document describes.
+#STR_IMAGE_REPO=192.0.2.20:5000/basenet
+
+# PostgreSQL is the exception: its chart renders the WHOLE reference, so this
+# value carries the registry itself when STR_IMAGE_REPO is set.
+#STR_PG_IMAGE=postgres:14
+
+# ---- A MemberOrg against a real identity provider ---------------------------
+#
+# The defaults in basenet.conf suit the bundled provider. Against Keycloak or
+# anything else, these are the keys that move - and nothing else does.
+#
+# Any STR_MO_* key is overridden for ONE MemberOrg by appending its name in
+# capitals with dashes as underscores, so a second organization with different
+# credentials needs no second file:
+#
+#     STR_MO_CLIENT_SECRET_MEMBERORG_A=<that client's real secret>
+#     STR_MO_WALLET_USER_MEMBERORG_A=<that person's sub at your provider>
+#
+# %s in a value is the MemberOrg's name.
+#
+#STR_OIDC_WELL_KNOWN_URL=https://192.0.2.30/realms/basenet/.well-known/openid-configuration
+#STR_OIDC_JWKS_URL=https://192.0.2.30/realms/basenet/protocol/openid-connect/certs
+#STR_MO_CLIENT_ID=%s-validator
+#STR_MO_CLIENT_SECRET=change-me
+# Keycloak's sub is the service account's id, not the client id.
+#STR_MO_LEDGER_USER=service-account-%s-validator
+#STR_MO_WALLET_USER=%s-user
+
+# ---- A MemberOrg on another cluster -----------------------------------------
+#
+# Blank means this BaseNet Validator, reached from another namespace on the
+# same cluster. A MemberOrg somewhere else needs addresses that cluster can
+# reach - and if any MemberOrg will ever be off-cluster, read the warning about
+# domain.sequencerPublicUrl in README_LONG_TIME.md BEFORE the first install.
+# It is advertised when the network is founded and cannot be corrected after.
+#
+#STR_EXT_SCAN_URL=http://192.0.2.40:5012
+#STR_EXT_SPONSOR_URL=http://192.0.2.40:5014
+#STR_EXT_SEQUENCER_URL=http://192.0.2.40:5008

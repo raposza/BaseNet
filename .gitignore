@@ -1,0 +1,32 @@
+# Copyright (c) 2026 bentzn
+# SPDX-License-Identifier: Apache-2.0
+#
+# This repository ships NO agent instruction file - a reader, person or
+# otherwise, starts at README.md. The names below are listed
+CLAUDE.md
+GEMINI.md
+.cursorrules
+
+# Local edits to the one file a user is expected to edit.
+basenet.conf.bak
+basenet.conf.local
+
+# Editors and desktops
+*.swp
+*~
+.idea/
+.vscode/
+.DS_Store
+
+# Maven
+target/
+
+# Image tars written by download_images.sh, and one interrupted mid-write.
+*.tar
+*.tar.part
+
+# Python bytecode. The tools here are run as scripts and import each other,
+# which leaves __pycache__ behind; an empty one also trips the structure gate's
+# no-empty-directory check.
+__pycache__/
+*.pyc

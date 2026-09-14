@@ -1,0 +1,77 @@
+# Copyright (c) 2026 bentzn
+# SPDX-License-Identifier: Apache-2.0
+# Author Claude/bentzn
+# Generated 2026-09-07T00:00:00Z
+#
+# The super validator. This is the file that founds the network.
+#
+# joinWithKeyOnboarding is ABSENT ON PURPOSE. Its presence selects the
+# join-with-key branch in the chart's sv template; omitting it reaches
+# found-dso, which is how a private network comes into existence with no
+# sponsor and no external SV. The vendor's example values offer only the
+# joining path because they are written for an operator joining an existing
+# network - the example values are not the software, the chart is.
+#
+# auth.jwksUrl, networkName and the storage class are supplied by install.sh
+# from basenet.conf.
+
+onboardingType: found-dso
+onboardingName: sv
+onboardingFoundingSvRewardWeightBps: 10000
+isDevNet: true
+
+nodeIdentifier: sv
+participantAddress: participant
+
+cluster:
+  fixedTokens: true
+
+auth:
+  audience: "https://sv.example.com"
+
+scan:
+  publicUrl: "http://scan-app:5012"
+  internalUrl: "http://scan-app:5012"
+
+domain:
+  sequencerAddress: global-domain-0-sequencer
+  mediatorAddress: global-domain-0-mediator
+  # IRREVERSIBLE. This is advertised into the topology when the DSO is founded
+  # and cannot be corrected without founding the network again. In-cluster
+  # service DNS, never localhost: inside a pod, localhost is that pod. If this
+  # network will ever be reached from outside the cluster, put the external
+  # hostname here BEFORE the first install.
+  sequencerPublicUrl: "http://global-domain-0-sequencer:5008"
+  sequencerPruningConfig:
+    enabled: false
+
+# The chart's default is a GKE storage class. install.sh overrides this
+# from basenet.conf; the default here keeps render.sh self-sufficient.
+pvc:
+  volumeStorageClass: local-path
+
+persistence:
+  databaseName: cantonnet_sv
+  schema: sv
+  host: apps-pg
+  port: 5432
+  user: cnadmin
+  secretName: postgres-secrets
+
+resources:
+  requests:
+    cpu: "1"
+    memory: 3Gi
+  limits:
+    memory: 8Gi
+
+spliceInstanceNames:
+  networkName: "BaseNet"
+  networkFaviconUrl: "https://www.hyperledger.org/hubfs/hyperledgerfavicon.png"
+  amuletName: "Amulet"
+  amuletNameAcronym: "AMT"
+  nameServiceName: "Amulet Name Service"
+  nameServiceNameAcronym: "ANS"
+
+contactPoint: ""
+enableReloader: false

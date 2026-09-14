@@ -1,0 +1,70 @@
+# Copyright (c) 2026 bentzn
+# SPDX-License-Identifier: Apache-2.0
+# Author Claude/bentzn
+# Generated 2026-08-19T10:30:00Z
+#
+# THE BIND ADDRESS IS NOT SET, so the service listens on every interface. That
+# is deliberate and it is the one setting here worth knowing about: a Canton or
+# a scribe running in a virtual machine has to be able to reach the JWKS, and a
+# loopback bind makes that fail in a way that looks like a key problem. This
+# service publishes its own private keys on request; it belongs on a
+# development machine and nowhere else.
+#
+# Override anything below on the command line, e.g.
+#   java -jar jwtmint-<version>-app.jar --server.address=127.0.0.1
+
+server:
+  port: 32002
+
+spring:
+  application:
+    name: raposza-jwtmint
+  main:
+    banner-mode: "off"
+  jackson:
+    default-property-inclusion: non_null
+    deserialization:
+      # so "aud": "x" and "aud": ["x"] are both accepted
+      accept-single-value-as-array: true
+      fail-on-unknown-properties: false
+
+logging:
+  level:
+    root: INFO
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %-5level %logger{0} - %msg%n"
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    # the mint is one flat surface; grouping it by tag helps nobody
+    tags-sorter: alpha
+    operations-sorter: method
+  api-docs:
+    path: /v3/api-docs
+
+raposza:
+  jwtmint:
+    # blank takes ~/.raposza/jwtmint/keys
+    dir-keys: ""
+    # BLANK RESOLVES ONE ISSUER AT STARTUP - http://<site-local IPv4>:<port>,
+    # lowest address first so a reboot cannot change it. That one string is the
+    # discovery document's `issuer`, the base of every endpoint URL it
+    # advertises, and the `iss` of every token minted; RFC 8414 section 3.3
+    # compares them literally, and the per-request derivation this replaced
+    # made them disagree whenever a VM and the host both used the service.
+    # Set this when the verifier reaches this machine by some other address -
+    # through a port forward, a proxy, or a host name.
+    issuer: ""
+    # TWENTY-FOUR HOURS. There is no fixed ceiling in Canton: the limit is
+    # whatever `max-token-lifetime` is set to, and with the key absent the
+    # default refuses anything much over five minutes. AuthOverlay renders
+    # the ceiling from the plan's own lifetime, so the participant is
+    # configured to accept exactly what this mints.
+    ttl-seconds: 86400
+    default-alg: RS256
+    default-subject: raposza
+    # WHO CAN SIGN IN at /oauth2/authorize: comma-separated name:password.
+    # Blank means nobody. Plain text on purpose - a test system's users. The
+    # name is the `sub` of every token issued to that person.
+    users: ""

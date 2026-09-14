@@ -1,0 +1,94 @@
+# Copyright (c) 2026 bentzn
+# SPDX-License-Identifier: Apache-2.0
+# Author Claude/bentzn
+# Generated 2026-09-11T09:46:00Z
+#
+# A MemberOrg's validator, JOINING the network rather than founding it: the
+# shape an organization deploys against DevNet, TestNet or MainNet.
+# memberorg-install.sh supplies everything that differs per MemberOrg or per
+# network - nodeIdentifier, validatorPartyHint, scanAddress,
+# svSponsorAddress, synchronizer.url, auth.jwksUrl, auth.audience,
+# validatorWalletUser, networkName and the storage class - from basenet.conf
+# and the MemberOrg's name.
+#
+# No onboardingSecretFrom, on purpose: with svSponsorAddress set and no secret
+# the chart takes its DevNet onboarding path.
+#
+# AUTHENTICATED THE PRODUCTION WAY. The validator's API verifies RS256 tokens
+# against the provider's JWKS, the wallet and name-service UIs sign people in
+# with the authorization code flow, and the validator gets its own ledger
+# token from the provider with client_credentials - fixedTokens off. The
+# secrets holding the client and the UIs' provider are memberorg-secrets.sh's.
+
+disableAuth: false
+cluster:
+  fixedTokens: false
+svValidator: false
+enableWallet: true
+participantAddress: participant
+
+# One SV means one scan and one sequencer, so both are trusted singly: there
+# is no second SV for bft or bft-custom to compare against. A joiner takes the
+# top-level scanAddress; scanClient is the SV's own validator's form.
+nonSvValidatorTrustSingleScan: true
+synchronizer:
+  connectionType: trust-single
+
+# The schema's topup condition carries no required list, so an ABSENT topup
+# matches it vacuously and the consequent then demands the block, so the block
+# is here whether or not it is enabled.
+#
+# ENABLED, because base rate alone cannot carry a load test. MEASURED
+# 2026-09-13 on memberorg-a: the sequencer refused every submission with
+# SEQUENCER_NOT_ENOUGH_TRAFFIC_CREDIT at extraTrafficLimit 0 and
+# baseTrafficRemainder 1712, against a cost of 2683 to 2691 for an ordinary
+# transaction and 6711 for the four-envelope one. With this on, the validator
+# taps Canton Coin and buys extra traffic, which is what a MemberOrg does on
+# DevNet.
+#
+# 60000 covers a workload needing about 29600 cost units per second - four
+# transactions a cycle at 2 cycles/s. Whether the chart wants cost units or
+# the bytes behind them, a factor of the multiplier 4 apart, is recorded
+# nowhere: 0.7.4's schema says only integer minimum 0. The value is above both
+# readings, and the first purchase is up to minTopupInterval away.
+topup:
+  enabled: true
+  targetThroughput: 60000
+  minTopupInterval: "1m"
+
+migration:
+  attachPvc: true
+
+# The chart's default is a GKE storage class. memberorg-install.sh overrides
+# this from basenet.conf; the default here keeps a render self-sufficient.
+pvc:
+  volumeStorageClass: local-path
+
+persistence:
+  databaseName: cantonnet_validator
+  schema: validator
+  host: postgres
+  port: 5432
+  user: cnadmin
+  secretName: postgres-secrets
+  initImageName: "postgres:14"
+
+auth:
+  audience: "https://sv.example.com"
+
+resources:
+  requests:
+    cpu: "0.5"
+    memory: 2Gi
+  limits:
+    memory: 6Gi
+
+spliceInstanceNames:
+  networkName: "BaseNet"
+  networkFaviconUrl: "https://www.hyperledger.org/hubfs/hyperledgerfavicon.png"
+  amuletName: "Amulet"
+  amuletNameAcronym: "AMT"
+  nameServiceName: "Amulet Name Service"
+  nameServiceNameAcronym: "ANS"
+
+enableReloader: false

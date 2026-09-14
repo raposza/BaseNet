@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright (c) 2026 bentzn
+  SPDX-License-Identifier: Apache-2.0
+  Author Claude/bentzn
+  Generated 2026-09-07T00:00:00Z
+
+  The JWT mint: one standalone Spring Boot service that holds a permanent JWKS
+  and hands out tokens on demand. BaseNet uses it as the identity provider
+  the SV and validator apps validate against.
+
+  The key material, the algorithms and the signer live in com.raposza.jwt in
+  this same module. The service adds an HTTP surface to them; it encodes no
+  JWK of its own.
+
+  NIMBUS IS PINNED rather than left to Spring Boot's dependency management,
+  because the JOSE code here is compiled against this version.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.5.16</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.raposza</groupId>
+    <artifactId>jwtmint</artifactId>
+    <version>0.1.0</version>
+    <name>jwtmint</name>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <properties>
+        <java.version>21</java.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <nimbus.jose.version>9.40</nimbus.jose.version>
+        <!-- The 2.8 line is the Spring Boot 3.x one; springdoc 3.x is for
+             Boot 4. Do NOT go below 2.8: springdoc 2.5 breaks on Spring
+             Framework 6.2 with a NoSuchMethodError on ControllerAdviceBean,
+             triggered by having a @RestControllerAdvice at all - which this
+             module does, in MintErrors. -->
+        <springdoc.version>2.8.17</springdoc.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.nimbusds</groupId>
+            <artifactId>nimbus-jose-jwt</artifactId>
+            <version>${nimbus.jose.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <!-- Swagger UI and the OpenAPI document, generated from the
+             controllers rather than hand-written beside them. -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>${springdoc.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- CLASSIFIER `app`, so the runnable jar and the plain one have
+                 different names rather than being the same name at different
+                 times.
+
+                 THE EXECUTION ID IS `repackage` AND THAT IS NOT COSMETIC.
+                 spring-boot-starter-parent already declares an execution of
+                 that id in its pluginManagement, so an execution under any
+                 OTHER id does not override it - it is added beside it, and the
+                 module gets two repackages. The first rewrites the plain jar
+                 in place with Main-Class = JarLauncher; the second reads that
+                 jar, takes JarLauncher for the application's own main class,
+                 and writes it as Start-Class. The result launches itself for
+                 ever:
+
+                   JarLauncher.main -> Launcher.launch -> Class.forName
+                     -> JarLauncher.main -> ... -> StackOverflowError
+
+                 Nothing in the build says so. `mvn package` is green, the jar
+                 is the right size, and the failure arrives only when it is
+                 run. Matching the id merges the two into one.
+
+                 mainClass is stated for the same reason: the parent
+                 configures it as ${start-class}, a property this module does
+                 not set. -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>repackage</id>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>app</classifier>
+                            <mainClass>com.raposza.jwtmint.JwtMintApp</mainClass>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

@@ -1,0 +1,51 @@
+# Copyright (c) 2026 bentzn
+# SPDX-License-Identifier: Apache-2.0
+# Author Claude/bentzn
+# Generated 2026-09-07T00:00:00Z
+#
+# The sequencer and mediator. This chart takes no auth configuration at all -
+# only persistence.
+
+enableAntiAffinity: false
+enableReloader: false
+
+sequencer:
+  # REQUIRED, and nothing catches its absence before the render: the template
+  # switches on sequencer.driver.type with no nil-guard, the chart's own
+  # values.yaml has no driver key, and values.schema.json does not mention it.
+  #
+  # Three branches exist: cometbft, cantonbft, postgres. The vendor's examples
+  # show only the first two because they are written for a node joining the
+  # real BFT chain. CometBFT is off here, so this is the reference sequencer
+  # backed by a database.
+  #
+  # address and password must be SCALARS. The password is rendered inline into
+  # the pod spec by this chart, not read through a secretKeyRef; install.sh
+  # supplies it from basenet.conf.
+  driver:
+    type: "postgres"
+    address: sequencer-pg
+  persistence:
+    host: sequencer-pg
+    port: 5432
+    databaseName: cantonnet_sequencer
+    secretName: postgres-secrets
+  resources:
+    requests:
+      cpu: "1"
+      memory: 2Gi
+    limits:
+      memory: 6Gi
+
+mediator:
+  persistence:
+    host: mediator-pg
+    port: 5432
+    databaseName: cantonnet_mediator
+    secretName: postgres-secrets
+  resources:
+    requests:
+      cpu: "0.5"
+      memory: 1Gi
+    limits:
+      memory: 4Gi

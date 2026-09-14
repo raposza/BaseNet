@@ -1,0 +1,21 @@
+# Copyright (c) 2026 bentzn
+# SPDX-License-Identifier: Apache-2.0
+# Author Claude/bentzn
+# Generated 2026-09-11T09:46:00Z
+#
+# A MemberOrg's PostgreSQL: one instance, a database each for its participant
+# and its validator, which each create their own. The storage class is
+# supplied by memberorg-install.sh from basenet.conf.
+
+db:
+  volumeSize: 20Gi
+  volumeStorageClass: local-path
+  maxConnections: 300
+resources:
+  requests:
+    cpu: "0.25"
+    memory: 512Mi
+  limits:
+    memory: 4Gi
+persistence:
+  secretName: postgres-secrets

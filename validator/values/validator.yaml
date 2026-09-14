@@ -1,0 +1,68 @@
+# Copyright (c) 2026 bentzn
+# SPDX-License-Identifier: Apache-2.0
+# Author Claude/bentzn
+# Generated 2026-09-07T00:00:00Z
+#
+# The SV's own validator. auth.jwksUrl, networkName and the storage class are
+# supplied by install.sh from basenet.conf.
+
+disableAuth: true
+cluster:
+  fixedTokens: true
+svValidator: true
+nodeIdentifier: sv
+enableWallet: true
+validatorWalletUser: "validator-backend@clients"
+participantAddress: participant
+useSequencerConnectionsFromScan: true
+
+# The schema's topup condition carries no required list, so an ABSENT topup
+# matches it vacuously and the consequent then demands the block.
+# Present-and-disabled is the only shape that passes.
+topup:
+  enabled: false
+  targetThroughput: 0
+  minTopupInterval: "1m"
+
+# svValidator true forces scanClient with scanType trust-single, and a
+# top-level scanAddress is FORBIDDEN once scanClient is set.
+scanClient:
+  scanType: "trust-single"
+  scanAddress: "http://scan-app:5012"
+
+migration:
+  attachPvc: true
+
+# The chart's default is a GKE storage class. install.sh overrides this
+# from basenet.conf; the default here keeps render.sh self-sufficient.
+pvc:
+  volumeStorageClass: local-path
+
+persistence:
+  databaseName: cantonnet_validator
+  schema: validator
+  host: apps-pg
+  port: 5432
+  user: cnadmin
+  secretName: postgres-secrets
+  initImageName: "postgres:14"
+
+auth:
+  audience: "https://sv.example.com"
+
+resources:
+  requests:
+    cpu: "0.5"
+    memory: 2Gi
+  limits:
+    memory: 6Gi
+
+spliceInstanceNames:
+  networkName: "BaseNet"
+  networkFaviconUrl: "https://www.hyperledger.org/hubfs/hyperledgerfavicon.png"
+  amuletName: "Amulet"
+  amuletNameAcronym: "AMT"
+  nameServiceName: "Amulet Name Service"
+  nameServiceNameAcronym: "ANS"
+
+enableReloader: false
