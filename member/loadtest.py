@@ -2,7 +2,6 @@
 # Copyright (c) 2026 bentzn
 # SPDX-License-Identifier: Apache-2.0
 # Author Claude/bentzn
-# Generated 2026-09-13T16:40:00Z
 #
 # loadtest.py - a moderate, paced, concurrent workload on a BaseNet Member's
 # own participant, over the JSON Ledger API.

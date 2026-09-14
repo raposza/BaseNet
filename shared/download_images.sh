@@ -2,7 +2,6 @@
 # Copyright (c) 2026 bentzn
 # SPDX-License-Identifier: Apache-2.0
 # Author Claude/bentzn
-# Generated 2026-09-10T19:00:00Z
 #
 # Downloads every container image a Splice release needs, verifies each one
 # against the digest the vendor's chart pins, and saves it into a folder named

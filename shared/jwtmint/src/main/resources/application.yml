@@ -1,7 +1,6 @@
 # Copyright (c) 2026 bentzn
 # SPDX-License-Identifier: Apache-2.0
 # Author Claude/bentzn
-# Generated 2026-08-19T10:30:00Z
 #
 # THE BIND ADDRESS IS NOT SET, so the service listens on every interface. That
 # is deliberate and it is the one setting here worth knowing about: a Canton or

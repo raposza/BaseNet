@@ -19,7 +19,6 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * those calls carries a cookie.
  *
  * Author Claude/bentzn
- * Generated 2026-09-11T18:30:00Z
  */
 @Configuration
 public class CorsConfig implements WebMvcConfigurer {

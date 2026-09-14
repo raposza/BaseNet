@@ -2,7 +2,6 @@
 # Copyright (c) 2026 bentzn
 # SPDX-License-Identifier: Apache-2.0
 # Author Claude/bentzn
-# Generated 2026-09-12T18:00:00Z
 #
 # nmt_overlay.py - one install overlay: an absolute heap, a pod limit derived
 # from it, and Native Memory Tracking.

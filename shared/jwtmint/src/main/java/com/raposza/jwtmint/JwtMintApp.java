@@ -67,11 +67,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * minted at loopback and a document fetched from a virtual machine disagreed.
  *
  * Author Claude/bentzn
- * Generated 2026-08-19T10:30:00Z
  */
 @SpringBootApplication
 @OpenAPIDefinition(info = @Info(title = "raposza JWT mint",
-        version = "0.1.0",
+        version = "0.2.0",
         description = "A **test** token service for a local Canton sandbox. It publishes its own private keys and mints whatever it is asked for, including tokens a participant must refuse. Do not run it anywhere that matters.\n\nEach endpoint below says what it does, which standard it implements where there is one, and carries a command that runs as it stands."))
 public class JwtMintApp {
 

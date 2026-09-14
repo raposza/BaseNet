@@ -1,0 +1,34 @@
+# Copyright (c) 2026 bentzn
+# SPDX-License-Identifier: Apache-2.0
+# Author Claude/bentzn
+#
+# The KMS half of a MemberOrg's participant, passed AFTER participant.yaml and
+# only when FLAG_MO_KMS is on. Everything that varies is set on the command
+# line by memberorg-install.sh; what is here is the structure.
+#
+# The chart maps this kms block onto the participant's crypto.kms config and
+# turns camelCase into kebab-case on the way, so keyFile arrives as key-file.
+# EXTRA_CLASSPATH is appended to the class path by the image's own launcher,
+# which is how the driver jar is loaded without building an image.
+
+kms:
+  type: driver
+
+# The participant chart's own volume, mounted at /persistent-data. The key file
+# lives here because a participant that loses its keys cannot resume its
+# identity - every party id it allocated carries its namespace fingerprint.
+pvc: {}
+
+extraVolumes:
+  - name: mockkms-driver
+    secret:
+      secretName: mockkms-driver
+
+extraVolumeMounts:
+  - name: mockkms-driver
+    mountPath: /mockkms
+    readOnly: true
+
+additionalEnvVars:
+  - name: EXTRA_CLASSPATH
+    value: /mockkms/driver.jar

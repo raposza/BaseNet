@@ -28,7 +28,6 @@ import java.util.UUID;
  * participants in reach are already configured against.
  *
  * Author Claude/bentzn
- * Generated 2026-07-31T16:00:00Z
  */
 public final class JwtMinter {
 

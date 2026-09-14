@@ -23,7 +23,6 @@ import java.util.List;
  * @param idParticipant CUSTOM only, may be null
  *
  * Author Claude/bentzn
- * Generated 2026-07-31T16:00:00Z
  */
 public record TokenSpec(TokenShape shape, String strSubject, String strIssuer,
         String strAudience, String strScope, Duration ttl, List<String> lstActAs,

@@ -1,7 +1,6 @@
 # Copyright (c) 2026 bentzn
 # SPDX-License-Identifier: Apache-2.0
 # Author Claude/bentzn
-# Generated 2026-09-07T00:00:00Z
 #
 # The SV's own validator. auth.jwksUrl, networkName and the storage class are
 # supplied by install.sh from basenet.conf.

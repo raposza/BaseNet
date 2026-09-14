@@ -3,7 +3,6 @@
   Copyright (c) 2026 bentzn
   SPDX-License-Identifier: Apache-2.0
   Author Claude/bentzn
-  Generated 2026-09-07T00:00:00Z
 
   The JWT mint: one standalone Spring Boot service that holds a permanent JWKS
   and hands out tokens on demand. BaseNet uses it as the identity provider
@@ -30,7 +29,7 @@
 
     <groupId>com.raposza</groupId>
     <artifactId>jwtmint</artifactId>
-    <version>0.1.0</version>
+    <version>0.2.0</version>
     <name>jwtmint</name>
 
     <licenses>

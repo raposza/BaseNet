@@ -62,7 +62,6 @@ import java.util.List;
  * service cannot disagree about what they are.
  *
  * Author Claude/bentzn
- * Generated 2026-08-21T00:00:00Z
  */
 @Component
 public final class IssuerResolver {

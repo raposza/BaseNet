@@ -2,7 +2,6 @@
 # Copyright (c) 2026 bentzn
 # SPDX-License-Identifier: Apache-2.0
 # Author Claude/bentzn
-# Generated 2026-09-11T09:46:00Z
 #
 # Sourced by memberorg-secrets.sh, memberorg-install.sh and
 # memberorg-teardown.sh, after basenet.conf and its .local. Not run on its

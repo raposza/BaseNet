@@ -2,7 +2,6 @@
 # Copyright (c) 2026 bentzn
 # SPDX-License-Identifier: Apache-2.0
 # Author Claude/bentzn
-# Generated 2026-09-11T09:46:00Z
 #
 # Installs one MemberOrg's validator node - PostgreSQL, a participant, and a
 # validator with the wallet and name-service UIs - into its own namespace, the
@@ -85,6 +84,24 @@ fi
 LST_WAIT=()
 [ "$FLAG_RENDER" = "1" ] || LST_WAIT=(--wait --timeout 10m)
 
+# THE KMS HALF, off unless FLAG_MO_KMS says otherwise. participant-kms.yaml
+# carries the structure and is passed after participant.yaml; the values that
+# vary are set here. A participant cannot be moved between KMS and non-KMS
+# afterwards - its namespace key cannot be rotated - so this is decided once,
+# before the MemberOrg is founded.
+LST_KMS=()
+if [ "${FLAG_MO_KMS:-0}" = "1" ]; then
+    LST_KMS=(-f values/participant-kms.yaml
+             --set kms.name="$STR_MO_KMS_NAME"
+             --set kms.config.keyFile="$STR_MO_KMS_KEY_FILE"
+             --set kms.config.auditLogging=true
+             --set pvc.size="$STR_MO_KMS_PVC_SIZE"
+             --set pvc.volumeStorageClass="$STR_STORAGE_CLASS")
+    [ -z "${STR_MO_KMS_LOG_FILE:-}" ] || LST_KMS+=(
+             --set additionalEnvVars[1].name=KMS_LOG_FILE_NAME
+             --set additionalEnvVars[1].value="$STR_MO_KMS_LOG_FILE")
+fi
+
 
 . ../shared/image-overrides.sh
 check_image_override
@@ -110,7 +127,7 @@ install postgres    splice-postgres    postgres.yaml "${LST_WAIT[@]}" \
 install participant splice-participant participant.yaml \
     --set auth.jwksUrl="$STR_JWKS" \
     --set auth.targetAudience="$STR_LEDGER_AUD" \
-    "${LST_REPO[@]}" "${LST_INIT[@]}"
+    "${LST_REPO[@]}" "${LST_INIT[@]}" "${LST_KMS[@]+"${LST_KMS[@]}"}"
 install validator   splice-validator   validator.yaml \
     --set nodeIdentifier="$STR_MEMBERORG" \
     --set validatorPartyHint="$STR_MEMBERORG" \

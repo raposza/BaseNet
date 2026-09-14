@@ -2,7 +2,6 @@
 # Copyright (c) 2026 bentzn
 # SPDX-License-Identifier: Apache-2.0
 # Author Claude/bentzn
-# Generated 2026-09-13T18:00:00Z
 #
 # The moderate-load run: a paced concurrent workload against one BaseNet
 # Member, with every JVM in its namespace sampled from outside while it runs.

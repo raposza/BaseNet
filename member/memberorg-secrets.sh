@@ -2,7 +2,6 @@
 # Copyright (c) 2026 bentzn
 # SPDX-License-Identifier: Apache-2.0
 # Author Claude/bentzn
-# Generated 2026-09-11T09:46:00Z
 #
 # Creates one MemberOrg's namespace and the secrets its charts mount with
 # optional:false. Run this before memberorg-install.sh, with the same name.
@@ -82,6 +81,18 @@ kubectl -n "$STR_MEMBERORG" create secret generic splice-app-cns-ui-auth \
     --from-literal=url="$STR_OIDC_BASE_URL" \
     --from-literal=client-id="$STR_ANS_CLIENT" \
     --dry-run=client -o yaml | kubectl apply -f -
+
+
+# THE KMS DRIVER, when FLAG_MO_KMS is on. The jar rides in a secret and is
+# mounted read-only at /mockkms; nothing is pushed to a registry and no image
+# is built. A real driver goes in the same way - replace the jar and the name.
+if [ "${FLAG_MO_KMS:-0}" = "1" ]; then
+    STR_JAR="../$STR_MO_KMS_JAR"
+    [ -f "$STR_JAR" ] || { echo "no driver jar at $STR_MO_KMS_JAR - run shared/mockkms/build.sh first" >&2; exit 1; }
+    kubectl -n "$STR_MEMBERORG" create secret generic mockkms-driver \
+        --from-file=driver.jar="$STR_JAR" \
+        --dry-run=client -o yaml | kubectl apply -f -
+fi
 
 kubectl -n "$STR_MEMBERORG" get secret
 

@@ -2,7 +2,6 @@
 # Copyright (c) 2026 bentzn
 # SPDX-License-Identifier: Apache-2.0
 # Author Claude/bentzn
-# Generated 2026-09-13T15:30:00Z
 #
 # jvm_watch.py - samples every JVM in a namespace on an interval and reports
 # the PEAK, not a reading.

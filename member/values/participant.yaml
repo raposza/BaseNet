@@ -1,7 +1,6 @@
 # Copyright (c) 2026 bentzn
 # SPDX-License-Identifier: Apache-2.0
 # Author Claude/bentzn
-# Generated 2026-09-11T09:46:00Z
 #
 # A MemberOrg's own Canton participant. Its identity is initialised by the
 # MemberOrg's validator, which finds it at participantAddress.

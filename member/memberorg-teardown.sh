@@ -2,7 +2,6 @@
 # Copyright (c) 2026 bentzn
 # SPDX-License-Identifier: Apache-2.0
 # Author Claude/bentzn
-# Generated 2026-09-11T09:46:00Z
 #
 # Destroys one MemberOrg: its namespace, and with it the releases, the pods, the
 # PVCs and Helm's own release secrets. The network it was pointed at is not

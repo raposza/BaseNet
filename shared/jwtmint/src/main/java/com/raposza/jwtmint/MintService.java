@@ -45,7 +45,6 @@ import java.util.UUID;
  * is a number - all are one field away, and none needs a code change here.
  *
  * Author Claude/bentzn
- * Generated 2026-08-19T10:30:00Z
  */
 @Service
 public class MintService {

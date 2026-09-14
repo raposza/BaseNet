@@ -2,7 +2,6 @@
 # Copyright (c) 2026 bentzn
 # SPDX-License-Identifier: Apache-2.0
 # Author Claude/bentzn
-# Generated 2026-09-13T18:00:00Z
 #
 # Brings up a BaseNet Validator at the SHIPPED sizing - the memory in
 # validator/values/, no overlay. This is the shape that is exercised; use it

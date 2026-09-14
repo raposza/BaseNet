@@ -2,7 +2,6 @@
 # Copyright (c) 2026 bentzn
 # SPDX-License-Identifier: Apache-2.0
 # Author Claude/bentzn
-# Generated 2026-09-14T09:00:00Z
 #
 # SOURCED, NOT RUN. Per-image overrides, for a registry that does not hold the
 # images under the vendor's own names.

@@ -2,7 +2,6 @@
 # Copyright (c) 2026 bentzn
 # SPDX-License-Identifier: Apache-2.0
 # Author Claude/bentzn
-# Generated 2026-09-13T18:00:00Z
 #
 # Builds the pet shop DAR that loadtest.py uploads, and records its package id
 # beside it.

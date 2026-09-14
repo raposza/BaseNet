@@ -35,7 +35,6 @@ import com.nimbusds.jwt.SignedJWT;
  * can explain.
  *
  * Author Claude/bentzn
- * Generated 2026-08-19T10:30:00Z
  */
 public final class MintSigner {
 

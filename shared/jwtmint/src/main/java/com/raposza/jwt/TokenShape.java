@@ -11,7 +11,6 @@ package com.raposza.jwt;
  * shapes encode hard-won knowledge about what Canton actually accepts.
  *
  * Author Claude/bentzn
- * Generated 2026-07-31T16:00:00Z
  */
 public enum TokenShape {
 

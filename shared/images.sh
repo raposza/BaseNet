@@ -2,7 +2,6 @@
 # Copyright (c) 2026 bentzn
 # SPDX-License-Identifier: Apache-2.0
 # Author Claude/bentzn
-# Generated 2026-09-07T00:00:00Z
 #
 # Lists every container image this BaseNet needs, for the version in
 # basenet.conf. Contacts no cluster and pulls no image; it renders the

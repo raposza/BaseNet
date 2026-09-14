@@ -36,7 +36,6 @@
 --   * `length` and `sum` - see the note on `countOf` below.
 --
 -- Author Claude/bentzn
--- Generated 2026-08-17T22:15:00Z
 
 module Main where
 

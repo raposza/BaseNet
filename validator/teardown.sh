@@ -2,7 +2,6 @@
 # Copyright (c) 2026 bentzn
 # SPDX-License-Identifier: Apache-2.0
 # Author Claude/bentzn
-# Generated 2026-09-07T00:00:00Z
 #
 # Destroys the BaseNet Validator and leaves Kubernetes and the image cache alone, so
 # the next install pulls nothing.

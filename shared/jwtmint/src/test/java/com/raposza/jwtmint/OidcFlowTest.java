@@ -25,7 +25,6 @@ import java.util.Map;
  * the tokens carry, and that every binding refuses when it should.
  *
  * Author Claude/bentzn
- * Generated 2026-09-11T18:30:00Z
  */
 class OidcFlowTest {
 

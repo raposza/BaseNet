@@ -2,7 +2,6 @@
 # Copyright (c) 2026 bentzn
 # SPDX-License-Identifier: Apache-2.0
 # Author Claude/bentzn
-# Generated 2026-09-12T09:00:00Z
 #
 # Installs the nine Helm releases, in order. Run secrets.sh first.
 #

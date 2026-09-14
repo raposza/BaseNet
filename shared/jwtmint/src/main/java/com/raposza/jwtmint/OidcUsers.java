@@ -31,7 +31,6 @@ import java.util.Map;
  * The name is the `sub` of every token issued to that person.
  *
  * Author Claude/bentzn
- * Generated 2026-09-11T18:30:00Z
  */
 @Component
 public final class OidcUsers {

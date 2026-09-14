@@ -41,7 +41,6 @@ import java.util.Locale;
  * is.
  *
  * Author Claude/bentzn
- * Generated 2026-08-19T10:30:00Z
  */
 public enum MintAlg {
 

@@ -19,7 +19,6 @@ import java.nio.file.Path;
  * caller inside a virtual machine and a caller on the host at the same time.
  *
  * Author Claude/bentzn
- * Generated 2026-08-19T10:30:00Z
  */
 @Component
 public final class MintSettings {

@@ -52,7 +52,6 @@ import java.util.Map;
  * two share a directory convention and nothing else.
  *
  * Author Claude/bentzn
- * Generated 2026-08-19T10:30:00Z
  */
 public final class MintKeys {
 

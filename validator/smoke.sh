@@ -2,7 +2,6 @@
 # Copyright (c) 2026 bentzn
 # SPDX-License-Identifier: Apache-2.0
 # Author Claude/bentzn
-# Generated 2026-09-10T16:50:00Z
 #
 # Asserts that the BaseNet Validator is up, and prints how long each step took. Exit 0
 # means every step held; anything else names the one that did not. Straight

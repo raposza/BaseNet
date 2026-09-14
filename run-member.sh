@@ -2,7 +2,6 @@
 # Copyright (c) 2026 bentzn
 # SPDX-License-Identifier: Apache-2.0
 # Author Claude/bentzn
-# Generated 2026-09-13T18:00:00Z
 #
 # Brings up one BaseNet Member at the SHIPPED sizing - the memory in
 # member/values/, no overlay - pointed at the BaseNet Validator named in

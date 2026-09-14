@@ -25,7 +25,6 @@ import org.springframework.stereotype.Component;
  * set it started with rather than seeing half of each.
  *
  * Author Claude/bentzn
- * Generated 2026-08-19T10:30:00Z
  */
 @Component
 public final class MintKeyStore {

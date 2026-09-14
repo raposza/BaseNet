@@ -22,7 +22,6 @@ import java.util.Map;
  * @param claims the payload, decoded
  *
  * Author Claude/bentzn
- * Generated 2026-08-19T10:30:00Z
  */
 public record MintResponse(String token, String alg, String kid, long expiresIn,
         Map<String, Object> claims) {

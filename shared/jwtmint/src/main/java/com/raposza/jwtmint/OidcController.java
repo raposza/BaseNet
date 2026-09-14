@@ -47,7 +47,6 @@ import java.util.Set;
  * renews with its refresh token instead.
  *
  * Author Claude/bentzn
- * Generated 2026-09-11T18:30:00Z
  */
 @RestController
 @Tag(name = "OpenID Connect", description = "Sign-in for browser applications:"

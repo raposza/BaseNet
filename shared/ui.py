@@ -2,7 +2,6 @@
 # Copyright (c) 2026 bentzn
 # SPDX-License-Identifier: Apache-2.0
 # Author Claude/bentzn
-# Generated 2026-09-11T20:10:00Z
 #
 # ui.py - opens the vendor's web UIs of a running BaseNet in a browser.
 # STAYS UP; Ctrl-C ends it and every port-forward it holds.

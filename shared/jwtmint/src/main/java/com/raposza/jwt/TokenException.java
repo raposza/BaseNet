@@ -9,7 +9,6 @@ package com.raposza.jwt;
  * the status bar.
  *
  * Author Claude/bentzn
- * Generated 2026-07-31T16:00:00Z
  */
 public class TokenException extends RuntimeException {
 

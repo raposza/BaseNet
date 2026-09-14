@@ -44,7 +44,6 @@ import java.util.List;
  * </ul>
  *
  * Author Claude/bentzn
- * Generated 2026-08-11T20:15:00Z
  */
 public final class JwksMaterial {
 

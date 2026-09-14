@@ -2,7 +2,6 @@
 # Copyright (c) 2026 bentzn
 # SPDX-License-Identifier: Apache-2.0
 # Author Claude/bentzn
-# Generated 2026-09-12T10:00:00Z
 #
 # memsweep.py - the smallest memory each component of a BaseNet Validator
 # still starts and serves on, found by repeated install-and-tear-down.

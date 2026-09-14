@@ -44,7 +44,6 @@ import java.util.Map;
  * as it stands.
  *
  * Author Claude/bentzn
- * Generated 2026-08-19T18:00:00Z
  */
 @RestController
 @Tag(name = "Keys and tokens",

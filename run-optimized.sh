@@ -2,7 +2,6 @@
 # Copyright (c) 2026 bentzn
 # SPDX-License-Identifier: Apache-2.0
 # Author Claude/bentzn
-# Generated 2026-09-13T18:00:00Z
 #
 # The same two stacks, installed with an absolute heap per JVM and a pod limit
 # calculated from it, instead of the sizing the charts and values/ ship.

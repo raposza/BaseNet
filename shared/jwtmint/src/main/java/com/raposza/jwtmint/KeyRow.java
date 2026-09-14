@@ -22,7 +22,6 @@ import com.nimbusds.jose.jwk.KeyType;
  * @param published whether it appears in the public JWKS
  *
  * Author Claude/bentzn
- * Generated 2026-08-19T10:30:00Z
  */
 public record KeyRow(String alg, String kid, String kty, String detail, boolean published) {
 

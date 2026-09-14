@@ -51,7 +51,6 @@ import java.util.Map;
  *        any claim the service writes
  *
  * Author Claude/bentzn
- * Generated 2026-08-19T10:30:00Z
  */
 public record MintRequest(
         @Schema(description = "Signing algorithm, including NONE.", example = "RS256")

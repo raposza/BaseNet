@@ -2,7 +2,6 @@
 # Copyright (c) 2026 bentzn
 # SPDX-License-Identifier: Apache-2.0
 # Author Claude/bentzn
-# Generated 2026-09-12T16:40:00Z
 #
 # jvm_read.py - what every JVM in the namespace actually holds: RSS, committed
 # and used heap, metaspace, and - when Native Memory Tracking is on - the

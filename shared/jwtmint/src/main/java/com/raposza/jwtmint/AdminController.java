@@ -23,7 +23,6 @@ import java.util.Map;
  * worth more here than the verb being correct.
  *
  * Author Claude/bentzn
- * Generated 2026-08-19T10:30:00Z
  */
 @RestController
 @Tag(name = "Service", description = "What this service is and where its keys are.")

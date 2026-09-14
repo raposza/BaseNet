@@ -13,7 +13,6 @@ import org.springframework.http.HttpStatus;
  * `invalid_grant` above all - have to reach it by their own names.
  *
  * Author Claude/bentzn
- * Generated 2026-09-11T18:30:00Z
  */
 public final class OidcException extends RuntimeException {
 

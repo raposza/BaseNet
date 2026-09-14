@@ -22,7 +22,6 @@ import java.util.Map;
  * its own contract.
  *
  * Author Claude/bentzn
- * Generated 2026-08-19T10:30:00Z
  */
 @RestControllerAdvice
 public class MintErrors {

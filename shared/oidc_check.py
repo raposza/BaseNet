@@ -2,7 +2,6 @@
 # Copyright (c) 2026 bentzn
 # SPDX-License-Identifier: Apache-2.0
 # Author Claude/bentzn
-# Generated 2026-09-11T17:40:00Z
 #
 # oidc_check.py - tests an OpenID Provider against OpenID Connect Discovery 1.0
 # and Core 1.0 (both incorporating errata set 2), RFC 7636 PKCE, OpenID Connect

@@ -31,7 +31,6 @@ import java.util.Map;
  * a second of work and there is no reason to pay it per test.
  *
  * Author Claude/bentzn
- * Generated 2026-08-19T10:30:00Z
  */
 class MintServiceTest {
 

@@ -2,7 +2,6 @@
 # Copyright (c) 2026 bentzn
 # SPDX-License-Identifier: Apache-2.0
 # Author Claude/bentzn
-# Generated 2026-09-07T00:00:00Z
 #
 # THE GATE. Renders all nine releases, and a MemberOrg's three through
 # memberorg-install.sh --render, with no cluster contact. Every chart

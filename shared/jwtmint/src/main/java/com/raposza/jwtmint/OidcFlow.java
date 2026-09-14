@@ -61,7 +61,6 @@ import java.util.regex.Pattern;
  * system is a feature.
  *
  * Author Claude/bentzn
- * Generated 2026-09-11T18:30:00Z
  */
 @Service
 public class OidcFlow {

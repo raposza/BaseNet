@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright (c) 2026 bentzn -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.raposza</groupId>
+  <artifactId>raposza-mockkms</artifactId>
+  <version>0.2.0</version>
+  <packaging>jar</packaging>
+  <name>Raposza Mock KMS Driver</name>
+  <description>A Canton KMS Driver v1 that keeps its keys in a plaintext file. Test use only.</description>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <!-- Set by build.sh from the Canton jar it is given. -->
+    <canton.version>3.5.14</canton.version>
+  </properties>
+
+  <dependencies>
+    <!-- The participant image already carries all of this on its class path,
+         so every dependency here is provided and nothing is shaded. -->
+    <dependency>
+      <groupId>com.digitalasset.canton</groupId>
+      <artifactId>canton-open-source</artifactId>
+      <version>${canton.version}</version>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.13.0</version>
+        <configuration>
+          <release>21</release>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.4.2</version>
+      </plugin>
+    </plugins>
+  </build>
+</project>

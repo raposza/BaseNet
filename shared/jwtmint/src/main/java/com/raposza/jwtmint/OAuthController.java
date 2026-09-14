@@ -70,7 +70,6 @@ import java.util.Map;
  * `token_endpoint` and is unaffected by any of this.
  *
  * Author Claude/bentzn
- * Generated 2026-08-19T10:30:00Z
  * Revised for OpenID Connect 2026-09-11T18:30:00Z
  */
 @RestController
