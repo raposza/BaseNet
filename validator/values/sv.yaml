@@ -41,6 +41,9 @@ domain:
   # network will ever be reached from outside the cluster, put the external
   # hostname here BEFORE the first install.
   sequencerPublicUrl: "http://global-domain-0-sequencer:5008"
+  # The SV's side of the CantonBFT sequencer in global-domain.yaml - D-858.
+  # Without it sv-app is configured for a sequencer the chart no longer has.
+  enableBftSequencer: true
   sequencerPruningConfig:
     enabled: false
 

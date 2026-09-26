@@ -553,10 +553,29 @@ def check_token(mapDisc, lstKey, tupAuth, strClientId, strRedirect, strOrigin, s
         return None
     record("PASS", strSec, "id_token present", "Core 3.1.3.3")
 
-    nStatus2, _, strBody2 = token_request(mapDisc, mapForm, strClientId)
-    record("PASS" if is_error_json(nStatus2, strBody2, strError="invalid_grant") else "FAIL", strSec,
-           "the same code a second time -> %s %s" % (nStatus2, strBody2[:80]),
-           "Core 3.1.3.2: MUST verify the code was not previously used; RFC 6749 5.2 invalid_grant")
+    # THE REUSE TEST SPENDS A CODE OF ITS OWN. RFC 6749 4.1.2: a code used twice
+    # SHOULD revoke every token issued from it, so reusing the code whose tokens
+    # the renew and userinfo checks below go on to use would test those checks
+    # against tokens this script had just revoked.
+    tupReuse = fresh_code(mapDisc, strClientId, strRedirect, strUser, strPass, jar)
+    if tupReuse is None:
+        record("SKIP", strSec, "the same code a second time: no second code could be obtained", "")
+    else:
+        mapReuse = {"grant_type": "authorization_code", "code": tupReuse[0], "redirect_uri": strRedirect,
+                    "code_verifier": tupReuse[1]}
+        nStatus1, _, strBody1 = token_request(mapDisc, mapReuse, strClientId)
+        mapFirst = json_or_none(strBody1)
+        nStatus2, _, strBody2 = token_request(mapDisc, mapReuse, strClientId)
+        record("PASS" if is_error_json(nStatus2, strBody2, strError="invalid_grant") else "FAIL", strSec,
+               "the same code a second time -> %s %s" % (nStatus2, strBody2[:80]),
+               "Core 3.1.3.2: MUST verify the code was not previously used; RFC 6749 5.2 invalid_grant")
+        strRefreshFirst = mapFirst.get("refresh_token") if nStatus1 == 200 and isinstance(mapFirst, dict) else None
+        if strRefreshFirst:
+            nStatus4, _, strBody4 = token_request(mapDisc, {"grant_type": "refresh_token",
+                                                            "refresh_token": strRefreshFirst}, strClientId)
+            record("PASS" if nStatus4 != 200 else "WARN", strSec,
+                   "the refresh token of a code used twice -> %s %s" % (nStatus4, strBody4[:80]),
+                   "RFC 6749 4.1.2: SHOULD revoke the tokens issued from that code")
     nStatus3, _, strBody3 = token_request(mapDisc, dict(mapForm, code="not-a-code-" + secrets.token_hex(4)),
                                           strClientId)
     record("PASS" if is_error_json(nStatus3, strBody3) else "FAIL", strSec,

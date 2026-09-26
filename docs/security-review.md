@@ -2,8 +2,14 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 # Security posture
 
+Reviewed 2026-09-26 for v0.3.0.
+
 **This is a REVIEW, not an audit.** It was written by the people who wrote the
-code, from a static reading of this tree on 2026-09-13. Nothing in it was
+code, from a static reading of this tree on 2026-09-13; the sections on the
+identity provider were read again on 2026-09-25, when the provider became
+Raposza OIDC and the module this repository built was removed, and the whole
+document was read against the tree again on 2026-09-26 for v0.3.0 - Splice
+0.8.3, the CantonBFT sequencer and Raposza OIDC 0.4.0. Nothing in it was
 established by a third party, and no third party has signed anything about it.
 When an external audit exists it will be published beside this document,
 unedited.
@@ -22,8 +28,9 @@ shows.
 
 ## 1 - What executes, and how the command line is built
 
-`helm`, `kubectl` and `python3` on your machine, `java` and `mvn` if you build
-the bundled identity provider, `docker` only for `shared/download_images.sh`,
+`helm`, `kubectl` and `python3` on your machine, `java` to run the bundled
+identity provider, `java` and `mvn` if you build the mock KMS driver, `docker`
+only for `shared/download_images.sh`,
 and `dpm` or `daml` only if you build the pet shop fixture for the load test.
 
 **Nothing in this repository downloads a script and runs it.** There is no
@@ -45,8 +52,11 @@ over TLS, at install time, at the version in `basenet.conf`.
 
 **Container images** are pulled by the cluster, not by these scripts. The
 charts render every Splice image reference WITH ITS DIGEST - measured, ten of
-ten - so the runtime refuses content that does not hash to what the chart
-names. `postgres:14` is the exception and is pulled by tag.
+ten at 0.8.3 - so the runtime refuses content that does not hash to what the
+chart names. The PostgreSQL images are the exception and are pulled by tag, from
+Docker Hub unless `STR_IMAGE_REPO` is set: at 0.8.3 the four PostgreSQL releases
+run the `splice-postgres` chart's default, `postgres:14.24-trixie`, and the
+init containers `postgres:14`.
 `shared/images.sh` derives the full list from
 the rendered manifests rather than from a hand-kept list, and
 `STR_IMAGE_REPO` rewrites every reference to your mirror.
@@ -56,8 +66,10 @@ confirms the pulled image carries that digest, records `VERIFIED` or
 `UNPINNED` per image in `digests.txt`, and writes `SHA256SUMS` over the saved
 tars so the folder can be checked on another machine with `sha256sum -c`.
 
-**Maven dependencies** for `jwtmint` come from Maven Central under Maven's own
-checksum handling.
+**The identity provider** is not downloaded by these scripts.
+`shared/oidc.sh` runs the newest `raposza-oidc-server-*-app.jar` already in
+your local Maven repository - built there from the Raposza OIDC sources, or
+fetched from Maven Central under Maven's own checksum handling.
 
 **Nothing from the vendor is redistributed in this repository.** No chart, no
 image, no binary.
@@ -69,17 +81,20 @@ in your mirror.
 
 ## 3 - What listens, on which interface, with what authentication
 
-**`shared/jwtmint.sh` - the bundled identity provider. This is the one that
-matters.** It listens on the port in `STR_OIDC_BASE_URL`, 32002 by default,
-and it binds EVERY interface. That is deliberate: the cluster has to reach its
-JWKS, and a loopback bind fails in a way that looks like a key problem.
+**`shared/oidc.sh` - the bundled identity provider, Raposza OIDC. This is
+the one that matters.** It listens on the port in `STR_OIDC_BASE_URL`, 32002 by
+default, and it binds EVERY interface. That is deliberate: the cluster has to
+reach its JWKS, and a loopback bind fails in a way that looks like a key
+problem.
 
-Its posture, stated without euphemism:
+Its posture as `oidc.sh` starts it, stated without euphemism:
 
-* No endpoint requires authentication.
-* Its `client_credentials` grant accepts any client id and any client secret,
-  and mints a token with whatever subject, audience, scope and lifetime the
-  request asks for. The secret is not checked.
+* No admin password is set, so no endpoint requires authentication - its own
+  admin guard is off and says so at startup.
+* `/mint` and `/mint.txt` mint a token with whatever subject, audience, scope
+  and lifetime the request asks for, for anyone.
+* No client is registered in its store, so its `client_credentials` grant
+  accepts any client id and any client secret. The secret is not checked.
 * `GET /oauth2/jwks-private` and `GET /jwks-private.json` return the full key
   set INCLUDING the private key material.
 
@@ -107,9 +122,12 @@ provider.
 duration of a run.
 
 **Inside the cluster:** the BaseNet Validator's nodes run with `disableAuth`
-and `fixedTokens: true`. A BaseNet Member's participant verifies RS256 tokens
-against the provider's JWKS, and its validator authenticates to the provider
-with `client_credentials` - the production shape. **This repository deploys no
+and `fixedTokens: true`. Its sequencer runs CantonBFT with one node and no
+peers; its peer endpoint, `global-domain-0-sequencer:5010`, is an in-cluster
+service, and whether that endpoint authenticates a connecting peer has NOT been
+read. A BaseNet Member's participant verifies RS256 tokens against the
+provider's JWKS, and its validator authenticates to the provider with
+`client_credentials` - the production shape. **This repository deploys no
 ingress**, so nothing it installs is reachable from outside the cluster unless
 you add one.
 
@@ -119,17 +137,16 @@ On your machine:
 
 | where | what |
 | --- | --- |
-| `~/.raposza/jwtmint/keys` | the identity provider's JWKS, public AND private, persisted so a restart keeps the same keys |
+| `STR_OIDC_DIR`, `~/.raposza/basenet/oidc` by default | the identity provider's JWKS, public AND private, and its users and clients, persisted so a restart keeps the same keys |
 | `~/.raposza/fixtures/petshop/` | the built fixture DAR and its package id, for the load test |
 | `/tmp/bn-overlay-*` | the memory overlays `run-optimized.sh` writes |
 | `/tmp/bn-load-*.csv`, `/tmp/bn-watch-*.csv` | the load test's latency rows and the memory samples |
 | `basenet.conf.local` | your own settings, git-ignored and excluded from any export |
-| `shared/jwtmint/target/` | Maven build output |
 
-Files are written with the process umask and no explicit mode. **The private
-key file is not chmod 0600** - on a default umask it is readable by your group
-and by others. If that matters on your machine, tighten
-`~/.raposza/jwtmint/keys` yourself.
+Files are written with the process umask and no explicit mode, EXCEPT the
+identity provider's private key file, users and clients: Raposza OIDC restricts
+those to their owner, 0600, on a file system with POSIX permissions, and writes
+them silently unrestricted where there are none.
 
 In the cluster: PersistentVolumeClaims on `STR_STORAGE_CLASS` for the
 PostgreSQL instances, and Kubernetes Secrets in each namespace.
@@ -140,12 +157,11 @@ PostgreSQL instances, and Kubernetes Secrets in each namespace.
 
 ## 5 - What credential or key material is held, where, and for how long
 
-* **The identity provider's signing keys** - twelve of them, one per algorithm
-  - live on disk under `~/.raposza/jwtmint/keys` indefinitely, and are served
-  to anyone who asks. Delete the directory to rotate; the next start generates
-  a new set.
+* **The identity provider's signing keys** - one per algorithm - live on disk
+  under `STR_OIDC_DIR` indefinitely, and are served to anyone who asks. Delete
+  the directory to rotate; the next start generates a new set.
 * **`basenet.conf`** holds `STR_PG_PASSWORD` (`supersafe` as shipped),
-  `STR_JWTMINT_USERS` as `name:password` pairs in plain text, and
+  `STR_OIDC_USERS` as `name:password` pairs in plain text, and
   `STR_MO_CLIENT_SECRET` as a template. All are declared throwaway. The
   bundled provider does not check client secrets at all.
 * **`validator/secrets.sh` mints an HS256 token signed with the six-byte key
@@ -160,8 +176,8 @@ PostgreSQL instances, and Kubernetes Secrets in each namespace.
 
 ## 6 - What is logged, and whether a secret can reach a log line
 
-The scripts print names, not values: `jwtmint.sh` strips the passwords out of
-`STR_JWTMINT_USERS` before echoing the user names, `memberorg-secrets.sh`
+The scripts print names, not values: `oidc.sh` strips the passwords out of
+`STR_OIDC_USERS` before echoing the user names, `memberorg-secrets.sh`
 prints the client id, the ledger user and the audience but not the secret, and
 `validator/secrets.sh` prints `kubectl get secret`, which lists names only. The
 identity provider logs at INFO and logs key IDs, never key material.
@@ -173,9 +189,11 @@ with read access to those namespaces can read it.
 
 ## 7 - What leaves the machine
 
-Requests to the chart registry and the image registry - the vendor's, or your
-mirror if `STR_CHART_REPO` and `STR_IMAGE_REPO` are set. Maven Central while
-`jwtmint` builds. Whatever your kubeconfig points at. `shared/oidc_check.py`
+Requests to the chart registry and the image registry - the vendor's, and
+Docker Hub for PostgreSQL, or your mirror if `STR_CHART_REPO` and
+`STR_IMAGE_REPO` are set. Maven Central while
+the mock KMS driver builds. Whatever your kubeconfig points at.
+`shared/oidc_check.py`
 contacts only the issuer you name on its command line.
 
 **There is no telemetry, no analytics, no crash reporting and no call home.**
@@ -193,21 +211,20 @@ script set - so a mistyped name is refused rather than acted on.
 
 ## 9 - What third-party code is present
 
-Source only, resolved at build time, nothing vendored and no binaries in the
-repository:
+None vendored and no binaries in the repository. The mock KMS driver,
+`shared/mockkms/`, compiles against a Canton jar you supply, at `provided`
+scope, and bundles nothing of it. The identity provider, Raposza OIDC, is a
+separate artefact with its own third-party list and its own security review.
 
-* Nimbus JOSE+JWT - the JWT and JWK implementation behind `jwtmint`
-* Spring Boot - its HTTP surface
-* springdoc-openapi - its API documentation page
-
-Everything else in the tree was written for it. The Splice charts and images
+Everything in the tree was written for it. The Splice charts and images
 are the vendor's and are pulled, never redistributed - see `NOTICE`.
 
 ## 10 - How a release is built, and how a consumer verifies it
 
-**There is no binary release.** You clone the source, and `jwtmint` is built by
-Maven on your machine from the sources you can read. Nothing is downloaded
-pre-built from us.
+**There is no binary release.** You clone the source, and the mock KMS driver
+is built by Maven on your machine from the sources you can read. The identity
+provider is Raposza OIDC's own release artefact, or a build of its sources on
+your machine.
 
 **What that leaves unverifiable:** there is no signed tag, no signed release
 artefact and no build provenance for this repository, so a consumer's assurance
@@ -224,8 +241,8 @@ listed so nobody has to find them by reading.
 | L-1 | The bundled identity provider is unauthenticated, binds every interface, mints a token for any subject on request, and serves its own private keys |
 | L-2 | The network-side nodes run with `disableAuth` and `fixedTokens: true` |
 | L-3 | The ledger-API token is signed with a secret the vendor's chart hardcodes and carries no expiry |
-| L-4 | No signature or build-provenance verification on charts or images. The ten Splice images ARE digest-pinned by the charts; `postgres:14` is pulled by tag - `docs/images.md` |
-| L-5 | The identity provider's private key file takes the process umask; it is not 0600 |
+| L-4 | No signature or build-provenance verification on charts or images. The ten Splice images ARE digest-pinned by the charts; the PostgreSQL images - `postgres:14.24-trixie` and `postgres:14` at 0.8.3 - are pulled by tag - `docs/images.md` |
+| L-5 | The identity provider's private key file is 0600 only on a file system with POSIX permissions; elsewhere it takes the default |
 | L-6 | Passwords in `basenet.conf` are plain text and declared throwaway |
 | L-7 | No release artefact and no tag is signed |
 | L-8 | No ingress and no TLS between your machine and the cluster's services - `ui.py` proxies over plain HTTP on loopback |

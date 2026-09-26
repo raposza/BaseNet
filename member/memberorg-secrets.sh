@@ -102,7 +102,7 @@ echo "    machine  client $STR_CLIENT_ID, ledger user $STR_LEDGER_USER, audience
 echo "    wallet   user $STR_WALLET_USER, clients $STR_WALLET_CLIENT and $STR_ANS_CLIENT"
 # THE BUNDLED PROVIDER'S USERS are a setting too; a wallet user it does not
 # know cannot sign in. Another provider keeps its own and this does not apply.
-case ",${STR_JWTMINT_USERS:-}," in
+case ",${STR_OIDC_USERS:-}," in
     *",$STR_WALLET_USER:"*) ;;
-    *) echo "    NOTE: $STR_WALLET_USER is not in STR_JWTMINT_USERS - the bundled provider will refuse its sign-in" ;;
+    *) echo "    NOTE: $STR_WALLET_USER is not in STR_OIDC_USERS - the bundled provider will refuse its sign-in" ;;
 esac

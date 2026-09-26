@@ -1,8 +1,8 @@
 # Copyright (c) 2026 bentzn
 # SPDX-License-Identifier: Apache-2.0
 #
-# This repository ships NO agent instruction file - a reader, person or
-# otherwise, starts at README.md. The names below are listed
+# The one agent instruction file is AGENTS.md. The names below would be a
+# second one, and are ignored.
 CLAUDE.md
 GEMINI.md
 .cursorrules
@@ -10,6 +10,8 @@ GEMINI.md
 # Local edits to the one file a user is expected to edit.
 basenet.conf.bak
 basenet.conf.local
+# The onboarding file a network hands out. It holds a secret.
+onboarding.json
 
 # Editors and desktops
 *.swp

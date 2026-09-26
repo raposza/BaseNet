@@ -9,20 +9,24 @@ enableAntiAffinity: false
 enableReloader: false
 
 sequencer:
+  # CANTONBFT, ONE NODE AND NO PEERS - D-858. From Splice 0.8.0 the chart has
+  # NO postgres (reference) driver: templates/sequencer.yaml at 0.8.0 to 0.8.3
+  # carries cometbft and cantonbft only, and `type: "postgres"` renders a
+  # sequencer with NO driver block, which render.sh does not catch. This is
+  # the setting BaseNet was founded on at 0.8.3 on 2026-09-25, together with
+  # domain.enableBftSequencer in sv.yaml. The 0.7.x charts are not served by
+  # these values.
+  #
   # REQUIRED, and nothing catches its absence before the render: the template
   # switches on sequencer.driver.type with no nil-guard, the chart's own
   # values.yaml has no driver key, and values.schema.json does not mention it.
   #
-  # Three branches exist: cometbft, cantonbft, postgres. The vendor's examples
-  # show only the first two because they are written for a node joining the
-  # real BFT chain. CometBFT is off here, so this is the reference sequencer
-  # backed by a database.
-  #
-  # address and password must be SCALARS. The password is rendered inline into
-  # the pod spec by this chart, not read through a secretKeyRef; install.sh
-  # supplies it from basenet.conf.
+  # address and password stay as the network was founded with them; they must
+  # be SCALARS, and install.sh supplies the password from basenet.conf.
   driver:
-    type: "postgres"
+    type: cantonbft
+    externalAddress: global-domain-0-sequencer
+    externalPort: 5010
     address: sequencer-pg
   persistence:
     host: sequencer-pg

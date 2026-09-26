@@ -336,7 +336,7 @@ def main():
     # are ended rather than orphaned.
     signal.signal(signal.SIGINT, on_signal)
     signal.signal(signal.SIGTERM, on_signal)
-    print("\nSign in with a user of the identity provider - STR_JWTMINT_USERS for the"
+    print("\nSign in with a user of the identity provider - STR_OIDC_USERS for the"
           "\nbundled one. Ctrl-C ends this and every port-forward.\n", flush=True)
     try:
         while True:

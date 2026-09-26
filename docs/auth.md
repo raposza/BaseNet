@@ -2,11 +2,13 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 # The auth model, per chart
 
+Reviewed 2026-09-26 for v0.3.0.
+
 ## The rule this deployment follows
 
-**BaseNet is for testing and will never be secure. `jwtmint` will never be
-secure** - it mints a token for anyone who asks and serves its own private
-keys, deliberately.
+**BaseNet is for testing and will never be secure. The bundled identity
+provider will never be secure as BaseNet runs it** - it mints a token for
+anyone who asks and serves its own private keys, deliberately.
 
 **Everything else follows the principles of a production deployment exactly.**
 Every component is a registered client, obtains its token the normal way,
@@ -63,12 +65,17 @@ registered anywhere.
 
 ### The bundled provider
 
-`jwtmint/` is that provider, and `jwtmint.sh` runs it. It is an OpenID
-Provider: discovery, a JWKS endpoint, a login page for the users in
-`STR_JWTMINT_USERS`, the authorization code flow with PKCE that browser
-applications use, UserInfo and logout. It holds a permanent JWKS under
-`~/.raposza/jwtmint/keys/` and still mints any token on request through
-`client_credentials` and `/mint`. It publishes its own private keys, which
+Raposza OIDC is that provider, and `shared/oidc.sh` runs it: the newest
+`raposza-oidc-server-*-app.jar` in your local Maven repository, a separate
+project that this repository does not build. It is an OpenID Provider:
+discovery, a JWKS endpoint, a login page for the users in
+`STR_OIDC_USERS`, the authorization code flow with PKCE that browser
+applications use, UserInfo and logout. It keeps its keys, users and clients
+in `STR_OIDC_DIR`, its own directory, and mints any token on request through
+`/mint`. **No client is registered there**, so `client_credentials` checks no
+client id and no secret; registering the first client would turn the checks on
+for every client, and the Members' machine clients and the UIs' redirect URIs
+would then all have to be registered. It publishes its own private keys, which
 is a feature in a throwaway environment and a reason it belongs nowhere else.
 
 It cannot sign the participant's ledger-api token: it enforces the 32-byte HMAC
@@ -83,11 +90,11 @@ against `auth.jwksUrl`. Both come from `basenet.conf`.
 That address is resolved **from inside the cluster**. `localhost` inside a pod
 is that pod; use a host address the cluster can route to.
 
-## Using your own OIDC provider instead of jwtmint
+## Using your own OIDC provider instead of the bundled one
 
-The rule at the top of this file is the whole of it: `jwtmint` stands in for a
-production identity provider, same protocol and same concepts, and moving to
-another one is a change of settings and nothing more.
+The rule at the top of this file is the whole of it: the bundled provider
+stands in for a production identity provider, same protocol and same concepts,
+and moving to another one is a change of settings and nothing more.
 
 `oidc_check.py` is the contract both are held to. Run it against your
 provider before you switch, with a user and a public client registered
@@ -103,7 +110,7 @@ Every result names the clause it tests. A FAIL is something the web UIs or
 the backends will trip over; `OIDC_ALLOW_HTTP=1` downgrades plain http to a
 warning for a provider on a test network.
 
-Nothing in the charts is specific to jwtmint. They take exactly three things
+Nothing in the charts is specific to the bundled provider. They take exactly three things
 from an identity provider, and each is a key in `basenet.conf`:
 
 | key | what the charts do with it |
@@ -116,7 +123,7 @@ from an identity provider, and each is a key in `basenet.conf`:
 the apps themselves only because of it: with
 `cluster.fixedTokens` they present static tokens from their secrets, and the
 participant's ledger-api token is signed by `secrets.sh` whichever provider
-you use. Skip `jwtmint.sh` and leave Java and Maven out.
+you use. Skip `oidc.sh` and leave Java out.
 
 The keys it serves must be reachable from inside the cluster, like the
 bundled provider's.
@@ -152,7 +159,7 @@ secret:
 | the wallet's owner | the validator's own party belongs to this user | `STR_MO_WALLET_USER` |
 
 Every BaseNet Member has its own wallet user - `%s-user` by default, `%s` being
-the MemberOrg's name - and the bundled provider's users, `STR_JWTMINT_USERS`,
+the MemberOrg's name - and the bundled provider's users, `STR_OIDC_USERS`,
 list one for `memberorg-a` and one for `memberorg-b`. A MemberOrg with another
 name needs its user added there, and the provider restarted, before it can
 sign in.

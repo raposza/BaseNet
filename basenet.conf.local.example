@@ -49,7 +49,7 @@ STR_STORAGE_CLASS=local-path
 # the MemberOrg whose wallet they open - the default pattern is <name>-user.
 #
 # A replacement provider keeps its own users and ignores this line.
-STR_JWTMINT_USERS=sv-user:change-me,memberorg-a-user:change-me
+STR_OIDC_USERS=sv-user:change-me,memberorg-a-user:change-me
 
 # ---- The rest have defaults that work ---------------------------------------
 

@@ -16,6 +16,53 @@ STR_EXT_SCAN_URL="${STR_EXT_SCAN_URL:-http://scan-app.$STR_NAMESPACE.svc.cluster
 STR_EXT_SPONSOR_URL="${STR_EXT_SPONSOR_URL:-http://sv-app.$STR_NAMESPACE.svc.cluster.local:5014}"
 STR_EXT_SEQUENCER_URL="${STR_EXT_SEQUENCER_URL:-http://global-domain-0-sequencer.$STR_NAMESPACE.svc.cluster.local:5008}"
 
+# ONBOARDING.JSON, beside run-member.sh, points a MemberOrg at a network
+# outside this cluster and onboards it there with a secret. Raposza SV hands
+# it out, one per secret:
+#
+#   {"sponsorUrl": "https://...", "scanUrl": "https://...",
+#    "sequencerUrl": "https://...", "secret": "...", "spliceVersion": "0.8.3"}
+#
+# memberorg-install.sh reads it; the addresses above are then not used.
+FILE_ONBOARDING="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/onboarding.json"
+
+# The Kubernetes secret the onboarding secret is kept in, in the MemberOrg's
+# namespace - the validator chart takes it only from a secret.
+STR_ONBOARDING_SECRET_NAME="splice-app-validator-onboarding"
+
+
+# One value from onboarding.json, checked, with no newline. spliceVersion may
+# be absent and prints nothing; every other key is required.
+function onboarding_value() {
+    python3 - "$FILE_ONBOARDING" "$1" <<'PY'
+import json, re, sys
+strFile, strKey = sys.argv[1], sys.argv[2]
+try:
+    with open(strFile, encoding="utf-8") as handle:
+        mapIn = json.load(handle)
+except (OSError, ValueError) as ex:
+    sys.exit("%s: %s" % (strFile, ex))
+mapPattern = {
+    "sponsorUrl": r"https?://[^\s\"'\\]+",
+    "scanUrl": r"https?://[^\s\"'\\]+",
+    "sequencerUrl": r"https?://[^\s\"'\\]+",
+    "secret": r"[A-Za-z0-9+/=]+",
+    "spliceVersion": r"[0-9]+\.[0-9]+\.[0-9]+",
+}
+strValue = mapIn.get(strKey) if isinstance(mapIn, dict) else None
+if strValue is None and strKey == "spliceVersion":
+    sys.exit(0)
+if not isinstance(strValue, str) or not re.fullmatch(mapPattern[strKey], strValue):
+    sys.exit("%s: %s is missing or not valid" % (strFile, strKey))
+sys.stdout.write(strValue)
+PY
+}
+
+# FLAG_MO_KMS_FORCE in the environment wins over FLAG_MO_KMS from the
+# settings, so a harness can run one MemberOrg without the KMS without
+# editing basenet.conf.local.
+[ -z "${FLAG_MO_KMS_FORCE:-}" ] || FLAG_MO_KMS="$FLAG_MO_KMS_FORCE"
+
 # The label memberorg-secrets.sh puts on a MemberOrg's namespace.
 # memberorg-teardown.sh deletes a namespace only when it carries it.
 STR_MEMBERORG_LABEL="basenet-member"

@@ -10,7 +10,7 @@
 #   ./run-validator.sh            secrets, the nine releases, then the smoke test
 #   ./run-validator.sh --round    also wait for the first closed mining round
 #
-# The identity provider must be running - ./shared/jwtmint.sh in another
+# The identity provider must be running - ./shared/oidc.sh in another
 # terminal - because the SV and validator apps validate against it at start.
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -35,7 +35,7 @@ try:
 except Exception as exc:
     print("    NOT REACHABLE FROM HERE: %s (%s)" % (strUrl, exc))
     print("    the cluster may still reach it; if it does not, start it with")
-    print("        ./shared/jwtmint.sh")
+    print("        ./shared/oidc.sh")
 PY
 echo
 

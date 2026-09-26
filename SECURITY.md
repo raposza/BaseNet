@@ -2,6 +2,8 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 # Security
 
+Reviewed 2026-09-26 for v0.3.0.
+
 ## Reporting a vulnerability
 
 Write to **info@raposza.com**. Say what you found, how to reproduce it, and
@@ -15,8 +17,9 @@ There is no bug bounty.
 
 ## What is in scope
 
-This repository: the shell scripts, the Helm values files, the Python tools and
-the `jwtmint` module.
+This repository: the shell scripts, the Helm values files and the Python tools.
+The identity provider it starts, Raposza OIDC, is a separate project with its
+own reporting channel and security review.
 
 **Not in scope: the Splice Helm charts and the container images.** They are
 Digital Asset's, they are pulled from their registry at install time, and
@@ -26,8 +29,9 @@ their maintainers.
 ## Supported versions
 
 One release of this repository targets one Splice release, named by
-`STR_SPLICE_VERSION` in `basenet.conf`. Only the current tip of the default
-branch is supported; there are no maintenance branches and no backports.
+`STR_SPLICE_VERSION` in `basenet.conf` - 0.3.0 targets Splice 0.8.3, and its
+values do not serve 0.7.x. Only the current tip of the default branch is
+supported; there are no maintenance branches and no backports.
 
 ## The short statement of the model
 
@@ -35,13 +39,15 @@ branch is supported; there are no maintenance branches and no backports.
 that a Splice release can be exercised before it reaches a network anyone
 cares about. Three consequences you should read before running it:
 
-* **The bundled identity provider, `shared/jwtmint/`, has no authentication of
-  its own.** It listens on every interface, it will mint a token for any
-  subject and any audience on request, and it serves its own PRIVATE keys at
-  `/oauth2/jwks-private`. Anyone who can reach its port can issue a token this
-  network accepts. That is deliberate for a test provider, and it is why it
-  belongs on a development machine on a network you control. It is replaceable
-  by settings: any OIDC provider that passes `shared/oidc_check.py` will serve.
+* **The identity provider `shared/oidc.sh` starts, Raposza OIDC, runs with
+  no authentication of its own.** It listens on every interface, `/mint` issues
+  a token for any subject and any audience on request, no client is registered
+  so `client_credentials` checks no client and no secret, and with no admin
+  password set it serves its own PRIVATE keys at `/oauth2/jwks-private`. Anyone
+  who can reach its port can issue a token this network accepts. That is
+  deliberate for a test provider, and it is why it belongs on a development
+  machine on a network you control. It is replaceable by settings: any OIDC
+  provider that passes `shared/oidc_check.py` will serve.
 * **The network-side nodes run with authentication disabled** -
   `disableAuth` and `fixedTokens: true` in `validator/values/`. The
   ledger-API token those nodes use is signed with a secret the vendor's chart

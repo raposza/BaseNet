@@ -57,7 +57,7 @@ are `postgres`, `participant` and `validator` in its own namespace.
 
 | release | chart | key | vendor default |
 | --- | --- | --- | --- |
-| `sequencer-pg`, `mediator-pg`, `participant-pg`, `apps-pg` | `splice-postgres` | `imageName` | `postgres:14` |
+| `sequencer-pg`, `mediator-pg`, `participant-pg`, `apps-pg` | `splice-postgres` | `imageName` | `postgres:14.24-trixie` at 0.8.3; `postgres:14` at 0.7.x |
 | `global-domain-0` | `splice-global-domain` | `sequencer.imageName` | `canton-sequencer` |
 | `global-domain-0` | `splice-global-domain` | `sequencer.cometbft.imageName` | `canton-cometbft-sequencer` |
 | `global-domain-0` | `splice-global-domain` | `sequencer.persistence.initImageName` | `postgres:14` |
@@ -99,12 +99,13 @@ from `STR_PG_IMAGE`; `global-domain` has two of them, one per node.
 runtime refuses content that does not hash to it:
 
 ```
-.../canton-participant:0.7.4@sha256:58cb84fa...
+.../canton-participant:0.8.3@sha256:99e221fc...
 ```
 
-Ten of the eleven images are pinned this way. `postgres:14` is the one that is
-not, and it is pulled by tag - which is why `download_images.sh` records
-`VERIFIED` or `UNPINNED` per image rather than assuming.
+At 0.8.3 ten of the twelve images are pinned this way. The two PostgreSQL
+images, `postgres:14.24-trixie` and `postgres:14`, are not, and are pulled by
+tag - which is why `download_images.sh` records `VERIFIED` or `UNPINNED` per
+image rather than assuming.
 
 **DO NOT READ `helm show values` FOR THIS.** Its `imageDigests` map is empty,
 and that is not the instrument - the digests are rendered, not defaulted. The

@@ -36,7 +36,8 @@
 # ACS is flat exercises none of the memory this test exists to find.
 #
 # AUTHENTICATION IS THE PRODUCTION PATH, not a back door. The token is minted
-# by jwtmint - the same RS256 provider the participant validates against - for
+# by the bundled identity provider's /mint.txt - the same RS256 provider the
+# participant validates against - for
 # the participant's OWN admin user, read from the Kubernetes secret rather than
 # assumed, with the audience the participant requires. See docs/auth.md.
 #
@@ -63,7 +64,8 @@
 # three versions with no compiler have run a DAR built
 # by 3.4.11, and the participant reports LF 2.1 among its supported versions.
 #
-# Needs kubectl and a cluster with the namespace up, and jwtmint running.
+# Needs kubectl and a cluster with the namespace up, and shared/oidc.sh
+# running.
 import argparse
 import base64
 import json
@@ -587,7 +589,7 @@ def main():
         with urllib.request.urlopen(strUrl, timeout=15) as resp:
             strToken = resp.read().decode("utf-8").strip()
     except Exception as err:
-        raise SystemExit("jwtmint did not mint a token at %s: %s"
+        raise SystemExit("the identity provider did not mint a token at %s: %s"
                          % (strIssuer, str_error(err)))
     if strToken.count(".") != 2:
         raise SystemExit("that is not a JWT: " + strToken[:80])

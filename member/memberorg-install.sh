@@ -24,9 +24,15 @@
 # The name is the namespace, the validator's party hint and its node
 # identifier. A second MemberOrg is the same command with another name.
 #
-# ONBOARDING NEEDS NO SECRET. svSponsorAddress is set and no onboarding secret
-# is, which the validator chart answers with its DevNet onboarding path. That
-# works only against an SV founded with isDevNet: true, as values/sv.yaml is.
+# ONBOARDING NEEDS NO SECRET against this cluster's BaseNet Validator.
+# svSponsorAddress is set and no onboarding secret is, which the validator
+# chart answers with its DevNet onboarding path. That works only against an SV
+# founded with isDevNet: true, as values/sv.yaml is.
+#
+# WITH ONBOARDING.JSON beside run-member.sh it is the other network's: its
+# addresses, its Splice release, and its secret - put in a Kubernetes secret
+# in the MemberOrg's namespace and named by onboardingSecretFrom.
+# memberorg-common.sh has the file's shape. --render ignores it.
 #
 # The MemberOrg table is here and only here. render.sh renders the MemberOrg
 # side by calling this script with --render, so the two cannot disagree.
@@ -62,6 +68,28 @@ if [ "$FLAG_RENDER" = "0" ]; then
     esac
     kubectl get ns "$STR_MEMBERORG" >/dev/null 2>&1 \
         || { echo "no namespace $STR_MEMBERORG - run ./memberorg-secrets.sh $STR_MEMBERORG first"; exit 1; }
+fi
+
+LST_ONBOARD=()
+if [ "$FLAG_RENDER" = "0" ] && [ -f "$FILE_ONBOARDING" ]; then
+    STR_EXT_SPONSOR_URL=$(onboarding_value sponsorUrl)
+    STR_EXT_SCAN_URL=$(onboarding_value scanUrl)
+    STR_EXT_SEQUENCER_URL=$(onboarding_value sequencerUrl)
+    STR_VERSION_ONBOARDING=$(onboarding_value spliceVersion)
+    [ -z "$STR_VERSION_ONBOARDING" ] || STR_SPLICE_VERSION="$STR_VERSION_ONBOARDING"
+    onboarding_value secret > /dev/null
+    # Through a file, not the command line, so the secret is not in ps.
+    FILE_SECRET=$(mktemp)
+    trap 'rm -f "$FILE_SECRET"' EXIT
+    chmod 600 "$FILE_SECRET"
+    onboarding_value secret > "$FILE_SECRET"
+    kubectl -n "$STR_MEMBERORG" create secret generic "$STR_ONBOARDING_SECRET_NAME" \
+        --from-file=secret="$FILE_SECRET" --dry-run=client -o yaml | kubectl apply -f - > /dev/null
+    rm -f "$FILE_SECRET"
+    LST_ONBOARD=(--set onboardingSecretFrom.secretKeyRef.name="$STR_ONBOARDING_SECRET_NAME"
+                 --set onboardingSecretFrom.secretKeyRef.key=secret
+                 --set onboardingSecretFrom.secretKeyRef.optional=false)
+    echo "=== onboarding.json: $STR_EXT_SPONSOR_URL, Splice $STR_SPLICE_VERSION, with its secret"
 fi
 
 STR_JWKS="${STR_OIDC_JWKS_URL:-$STR_OIDC_BASE_URL/oauth2/jwks}"
@@ -139,7 +167,7 @@ install validator   splice-validator   validator.yaml \
     --set validatorWalletUser="$STR_WALLET_USER" \
     --set spliceInstanceNames.networkName="$STR_NETWORK_NAME" \
     --set pvc.volumeStorageClass="$STR_STORAGE_CLASS" \
-    "${LST_REPO[@]}" "${LST_INIT[@]}"
+    "${LST_REPO[@]}" "${LST_INIT[@]}" "${LST_ONBOARD[@]+"${LST_ONBOARD[@]}"}"
 
 [ "$FLAG_RENDER" = "1" ] && exit 0
 echo

@@ -11,6 +11,9 @@
 #
 # The name is the namespace, the validator's party hint and its node
 # identifier. A second Member is the same command with another name.
+#
+# With onboarding.json beside this script the Member joins THAT network
+# instead, with its secret - member/memberorg-common.sh has the file's shape.
 set -euo pipefail
 cd "$(dirname "$0")"
 . ./basenet.conf
@@ -25,7 +28,7 @@ STR_NAME="${1:-}"
 
 cat <<EOF
 
-=== BaseNet Member $STR_NAME is installed
+=== BaseNet Member $STR_NAME is installed$([ ! -f ./onboarding.json ] || echo ", onboarding with onboarding.json")
 
 It is ONBOARDED when validator-app turns Ready, which is a few minutes later:
 
@@ -41,5 +44,5 @@ It is ONBOARDED when validator-app turns Ready, which is a few minutes later:
     destroy it        ( cd member && ./memberorg-teardown.sh $STR_NAME )
 
 Sign in to the wallet as $STR_NAME's own user at the identity provider's login
-page - the bundled provider's users are STR_JWTMINT_USERS in basenet.conf.
+page - the bundled provider's users are STR_OIDC_USERS in basenet.conf.
 EOF

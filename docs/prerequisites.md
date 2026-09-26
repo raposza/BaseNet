@@ -7,6 +7,13 @@
 `helm`, `kubectl` and `python3` on the machine running the scripts. `helm` must
 be able to reach the vendor's OCI registry to pull the charts.
 
+For the bundled identity provider, Java 21 and Raposza OIDC's runnable jar,
+`raposza-oidc-server-<version>-app.jar`, under
+`com/raposza/oidc/raposza-oidc-server/` in your local Maven repository -
+installed from its own sources, or taken from Maven Central with its `app`
+classifier. `shared/oidc.sh` runs the newest one there. Not needed if you
+point BaseNet at your own provider - `docs/auth.md`.
+
 ## The cluster
 
 Any Kubernetes cluster you are willing to destroy. Single-node k3s on a
